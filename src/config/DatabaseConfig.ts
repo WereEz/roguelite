@@ -1,6 +1,7 @@
 import {registerAs} from '@nestjs/config';
+import {DataSourceOptions} from 'typeorm';
 
-export default registerAs('database', () => {
+export function buildDatabaseConfig(): DataSourceOptions {
     const required = [
         'DATABASE_HOST',
         'DATABASE_PORT',
@@ -16,13 +17,16 @@ export default registerAs('database', () => {
     }
 
     return {
-        type: 'postgres' as const,
+        type: 'postgres',
         host: process.env.DATABASE_HOST,
         port: parseInt(process.env.DATABASE_PORT!, 10),
         username: process.env.DATABASE_USER,
         password: process.env.DATABASE_PASSWORD,
         database: process.env.DATABASE_NAME,
-        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-        synchronize: true,
+        entities: [__dirname + '/../**/*Entity{.ts,.js}'],
+        migrations: [__dirname + '/../**/infrastructure/migrations/*{.ts,.js}'],
+        synchronize: false,
     };
-});
+}
+
+export default registerAs('database', buildDatabaseConfig);

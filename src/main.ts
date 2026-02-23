@@ -1,13 +1,14 @@
-import {Logger} from '@nestjs/common';
+import {Logger, ValidationPipe} from '@nestjs/common';
 import {NestFactory} from '@nestjs/core';
 import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
-import {AppModule} from './app.module';
+import {App} from './app';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule, {cors: true});
+    const app = await NestFactory.create(App, {cors: true});
     const logger = new Logger('Bootstrap');
 
     app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({whitelist: true, forbidNonWhitelisted: true}));
 
     const swaggerConfig = new DocumentBuilder()
         .setTitle('Roguelite API')
@@ -19,7 +20,7 @@ async function bootstrap() {
 
     SwaggerModule.setup('api/docs', app, document);
 
-    const port = 3000;
+    const port = parseInt(process.env.APP_PORT || '3000', 10);
 
     await app.listen(port);
 
