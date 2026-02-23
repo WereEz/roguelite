@@ -1,11 +1,8 @@
-import {registerAs} from '@nestjs/config';
+import {ConfigType, registerAs} from '@nestjs/config';
+import {get} from 'env-var';
 
-export default registerAs('telegram', () => {
-    if (!process.env.TELEGRAM_BOT_TOKEN) {
-        throw new Error('Missing required environment variable: TELEGRAM_BOT_TOKEN');
-    }
+export const telegramConfiguration = registerAs('telegram', () => ({
+    token: get('TELEGRAM_BOT_TOKEN').required().asString(),
+}));
 
-    return {
-        token: process.env.TELEGRAM_BOT_TOKEN,
-    };
-});
+export type TelegramConfigType = ConfigType<typeof telegramConfiguration>;

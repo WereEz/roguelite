@@ -1,4 +1,4 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
 import {UserEntity} from '../../domain/entities/UserEntity';
@@ -12,14 +12,8 @@ export class UserRepository implements IUserRepository {
         private readonly repo: Repository<UserEntity>,
     ) {}
 
-    async findByTelegramId(telegramId: number): Promise<UserEntity> {
-        const entity = await this.repo.findOne({where: {telegramId}});
-
-        if (!entity) {
-            throw new NotFoundException(`User by telegramId: ${telegramId} not found.`);
-        }
-
-        return entity;
+    async findByTelegramId(telegramId: number): Promise<UserEntity | null> {
+        return await this.repo.findOne({where: {telegramId}});
     }
 
     async createUser(dto: UserCreateDto): Promise<UserEntity> {

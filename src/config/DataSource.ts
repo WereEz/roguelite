@@ -1,5 +1,5 @@
 import 'dotenv/config';
 import {DataSource} from 'typeorm';
-import {buildDatabaseConfig} from './DatabaseConfig';
+import {buildDataSourceOptions, databaseConfiguration} from './DatabaseConfig';
 
-export default new DataSource(buildDatabaseConfig());
+export default new DataSource(buildDataSourceOptions(databaseConfiguration()));

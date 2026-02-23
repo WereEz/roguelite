@@ -1,26 +1,29 @@
 import {Module} from '@nestjs/common';
-import {ConfigModule, ConfigService} from '@nestjs/config';
+import {ConfigModule} from '@nestjs/config';
 import {TypeOrmModule} from '@nestjs/typeorm';
-import {DataSourceOptions} from 'typeorm';
-import databaseConfig from './config/DatabaseConfig';
-import telegramConfig from './config/TelegramConfig';
+import {
+    databaseConfiguration,
+    DatabaseConfigType,
+    buildDataSourceOptions,
+} from './config/DatabaseConfig';
+import {telegramConfiguration} from './config/TelegramConfig';
 import {UserModule} from './user/UserModule';
-// import {TelegramModule} from './modules/telegram/telegram.module';
-// import {GameModule} from './modules/game/game.module';
+import {TelegramModule} from './telegram/TelegramModule';
+import {GameModule} from './game/GameModule';
 
 @Module({
     imports: [
         ConfigModule.forRoot({
-            load: [databaseConfig, telegramConfig],
+            load: [databaseConfiguration, telegramConfiguration],
             isGlobal: true,
         }),
         TypeOrmModule.forRootAsync({
-            inject: [ConfigService],
-            useFactory: (config: ConfigService) => config.get<DataSourceOptions>('database')!,
+            inject: [databaseConfiguration.KEY],
+            useFactory: (config: DatabaseConfigType) => buildDataSourceOptions(config),
         }),
         UserModule,
-        // TelegramModule,
-        // GameModule,
+        TelegramModule,
+        GameModule,
     ],
 })
 export class App {}

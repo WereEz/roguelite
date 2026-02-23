@@ -1,32 +1,27 @@
-import {registerAs} from '@nestjs/config';
+import {ConfigType, registerAs} from '@nestjs/config';
+import {get} from 'env-var';
 import {DataSourceOptions} from 'typeorm';
 
-export function buildDatabaseConfig(): DataSourceOptions {
-    const required = [
-        'DATABASE_HOST',
-        'DATABASE_PORT',
-        'DATABASE_USER',
-        'DATABASE_PASSWORD',
-        'DATABASE_NAME',
-    ];
+export const databaseConfiguration = registerAs('database', () => ({
+    host: get('DATABASE_HOST').required().asString(),
+    port: get('DATABASE_PORT').required().asPortNumber(),
+    username: get('DATABASE_USER').required().asString(),
+    password: get('DATABASE_PASSWORD').required().asString(),
+    database: get('DATABASE_NAME').required().asString(),
+}));
 
-    const missing = required.filter((key) => !process.env[key]);
+export type DatabaseConfigType = ConfigType<typeof databaseConfiguration>;
 
-    if (missing.length > 0) {
-        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-    }
-
+export function buildDataSourceOptions(config: DatabaseConfigType): DataSourceOptions {
     return {
         type: 'postgres',
-        host: process.env.DATABASE_HOST,
-        port: parseInt(process.env.DATABASE_PORT!, 10),
-        username: process.env.DATABASE_USER,
-        password: process.env.DATABASE_PASSWORD,
-        database: process.env.DATABASE_NAME,
+        host: config.host,
+        port: config.port,
+        username: config.username,
+        password: config.password,
+        database: config.database,
         entities: [__dirname + '/../**/*Entity{.ts,.js}'],
         migrations: [__dirname + '/../**/infrastructure/migrations/*{.ts,.js}'],
         synchronize: false,
     };
 }
-
-export default registerAs('database', buildDatabaseConfig);
