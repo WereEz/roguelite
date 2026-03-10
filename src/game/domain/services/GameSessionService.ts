@@ -13,18 +13,26 @@ export class GameSessionService {
         private readonly gameSessionRepository: IGameSessionRepository,
     ) {}
 
-    async createSession(userId: number): Promise<GameSessionEntity> {
-        return await this.gameSessionRepository.createSession(userId);
+    createSession(userId: number, totalRooms: number): Promise<GameSessionEntity> {
+        return this.gameSessionRepository.createSession(userId, totalRooms);
     }
 
-    getActiveSession(userId: number): Promise<GameSessionEntity | null> {
-        return this.gameSessionRepository.findActiveSession(userId);
+    findActiveSessionWithCharacter(userId: number): Promise<GameSessionEntity | null> {
+        return this.gameSessionRepository.findActiveSessionWithCharacter(userId);
+    }
+
+    findActiveSessionWithCharacterLocked(userId: number): Promise<GameSessionEntity | null> {
+        return this.gameSessionRepository.findActiveSessionWithCharacterLocked(userId);
     }
 
     finishSession(
         sessionId: number,
         result: GameSessionStatus.WON | GameSessionStatus.LOST,
-    ): Promise<GameSessionEntity> {
+    ): Promise<void> {
         return this.gameSessionRepository.finishSession(sessionId, result);
+    }
+
+    advanceRoom(sessionId: number): Promise<void> {
+        return this.gameSessionRepository.advanceRoom(sessionId);
     }
 }

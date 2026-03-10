@@ -9,10 +9,12 @@ import {PlayerAttackResultDto} from '../dtos/PlayerAttackResultDto';
 import {EnemyAttackResultDto} from '../dtos/EnemyAttackResultDto';
 
 const BASE_DODGE_CHANCE = 0.1;
-const MAX_DODGE_CHANCE = 0.5;
-const MIN_DODGE_CHANCE = 0.05;
+const MAX_DODGE_CHANCE = 1;
+const MIN_DODGE_CHANCE = 0.1;
+const AGILITY_DODGE_FACTOR = 0.05;
 const EVADE_DODGE_BONUS = 0.25;
-const PRECISE_DAMAGE_MULTIPLIER = 0.7;
+const PRECISE_DAMAGE_MULTIPLIER = 0.9;
+const ENDURANCE_REDUCTION_FACTOR = 0.5;
 
 @Injectable()
 export class CombatService {
@@ -78,7 +80,7 @@ export class CombatService {
         }
 
         if (action === PlayerAction.PRECISE_STRIKE) {
-            const damage = this.calcPreciseDamage(character);
+            const damage = this.reduceByEndurance(this.calcPreciseDamage(character), enemy);
 
             return {
                 enemyDamage: damage,
@@ -92,7 +94,7 @@ export class CombatService {
             return {enemyDamage: 0, events: [{type: CombatEventType.PLAYER_MISS}]};
         }
 
-        const damage = this.rollDamage(character);
+        const damage = this.reduceByEndurance(this.rollDamage(character), enemy);
 
         return {enemyDamage: damage, events: [{type: CombatEventType.PLAYER_HIT, damage}]};
     }
@@ -110,7 +112,10 @@ export class CombatService {
             const events: CombatEventDto[] = [{type: CombatEventType.PLAYER_EVADED}];
 
             if (action === PlayerAction.EVADE) {
-                const counterDamage = Math.floor(this.rollDamage(character));
+                const counterDamage = this.reduceByEndurance(
+                    Math.floor(this.rollDamage(character)),
+                    enemy,
+                );
 
                 events.push({type: CombatEventType.PLAYER_COUNTER, damage: counterDamage});
 
@@ -126,11 +131,11 @@ export class CombatService {
             events.push({type: CombatEventType.PLAYER_EVADE_FAILED});
         }
 
-        const damage = this.rollDamage(enemy);
+        const playerDamage = this.reduceByEndurance(this.rollDamage(enemy), character);
 
-        events.push({type: CombatEventType.PLAYER_TOOK_DAMAGE, damage});
+        events.push({type: CombatEventType.PLAYER_TOOK_DAMAGE, damage: playerDamage});
 
-        return {playerDamage: damage, enemyCounterDamage: 0, events};
+        return {playerDamage, enemyCounterDamage: 0, events};
     }
 
     private rollDamage(attacker: CombatantStateDto): number {
@@ -140,13 +145,19 @@ export class CombatService {
     }
 
     private calcDodgeChance(defender: CombatantStateDto, attacker: CombatantStateDto): number {
-        const diff = (defender.agility - attacker.agility) * 0.03;
+        const diff = (defender.agility - attacker.agility) * AGILITY_DODGE_FACTOR;
 
         return Math.max(MIN_DODGE_CHANCE, Math.min(MAX_DODGE_CHANCE, BASE_DODGE_CHANCE + diff));
     }
 
     private calcPreciseDamage(attacker: CombatantStateDto): number {
         return Math.max(1, Math.floor(this.rollDamage(attacker) * PRECISE_DAMAGE_MULTIPLIER));
+    }
+
+    private reduceByEndurance(damage: number, defender: CombatantStateDto): number {
+        const reduction = Math.floor(defender.endurance * ENDURANCE_REDUCTION_FACTOR);
+
+        return Math.max(1, damage - reduction);
     }
 
     private roll(chance: number): boolean {

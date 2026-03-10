@@ -1,4 +1,12 @@
-import {Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, Relation} from 'typeorm';
+import {
+    Column,
+    Entity,
+    Index,
+    JoinColumn,
+    OneToOne,
+    PrimaryGeneratedColumn,
+    Relation,
+} from 'typeorm';
 import {GameSessionEntity} from './GameSessionEntity';
 
 @Entity('characters')
@@ -6,10 +14,11 @@ export class CharacterEntity {
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Index()
     @Column()
     sessionId: number;
 
-    @OneToOne(() => GameSessionEntity)
+    @OneToOne(() => GameSessionEntity, (s) => s.character)
     @JoinColumn({name: 'sessionId'})
     session: Relation<GameSessionEntity>;
 

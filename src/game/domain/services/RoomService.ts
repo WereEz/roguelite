@@ -1,4 +1,4 @@
-import {Inject, Injectable, NotFoundException} from '@nestjs/common';
+import {Inject, Injectable} from '@nestjs/common';
 import {RoomEntity} from '../entities/RoomEntity';
 import {RoomType} from '../enums/RoomType';
 import {ROOM_REPOSITORY, IRoomRepository} from '../interfaces/IRoomRepository';
@@ -14,27 +14,11 @@ export class RoomService {
         return this.roomRepository.createMany(sessionId, types);
     }
 
-    getRooms(sessionId: number): Promise<RoomEntity[]> {
-        return this.roomRepository.findBySessionId(sessionId);
-    }
-
-    async getRoomByIndex(sessionId: number, index: number): Promise<RoomEntity> {
-        const room = await this.roomRepository.findBySessionAndIndex(sessionId, index);
-
-        if (!room) {
-            throw new NotFoundException(`Room in ${sessionId} and ${index} not found`);
-        }
-
-        return room;
+    getRoomByIndexWithRoomEnemy(sessionId: number, index: number): Promise<RoomEntity | null> {
+        return this.roomRepository.findBySessionAndIndexWithRoomEnemy(sessionId, index);
     }
 
     async completeRoom(sessionId: number, index: number): Promise<void> {
-        const room = await this.roomRepository.findBySessionAndIndex(sessionId, index);
-
-        if (!room) {
-            throw new NotFoundException(`Room in ${sessionId} and ${index} not found`);
-        }
-
-        await this.roomRepository.completeRoom(room.id);
+        await this.roomRepository.completeRoom(sessionId, index);
     }
 }

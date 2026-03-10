@@ -1,4 +1,4 @@
-import {Inject, Injectable, NotFoundException} from '@nestjs/common';
+import {Inject, Injectable} from '@nestjs/common';
 import {IUserRepository, USER_REPOSITORY} from '../interfaces/IUserRepository';
 import {UserCreateDto} from '../dtos/UserCreateDto';
 import {UserEntity} from '../entities/UserEntity';
@@ -9,20 +9,6 @@ export class UserService {
         @Inject(USER_REPOSITORY)
         private readonly userRepository: IUserRepository,
     ) {}
-
-    async findByTelegramId(telegramId: number): Promise<UserEntity | null> {
-        const user = this.userRepository.findByTelegramId(telegramId);
-
-        if (!user) {
-            throw new NotFoundException(`User by telegramId: ${telegramId} not found.`);
-        }
-
-        return user;
-    }
-
-    async createUser(dto: UserCreateDto): Promise<UserEntity> {
-        return this.userRepository.createUser(dto);
-    }
 
     async findOrCreate(dto: UserCreateDto): Promise<UserEntity> {
         const existing = await this.userRepository.findByTelegramId(dto.telegramId);

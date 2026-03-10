@@ -1,0 +1,13 @@
+export enum Template {
+    CHARACTER = 'character',
+    START = 'start',
+    NEW_GAME_NEW = 'new-game-new',
+    NEW_GAME_RESUMED = 'new-game-resumed',
+    STATS = 'stats',
+    ATTACK = 'attack',
+    COMBAT_TURN = 'combat-turn',
+    COMBAT_WIN = 'combat-win',
+    COMBAT_LOSE = 'combat-lose',
+    ENTER_ROOM = 'enter-room',
+    GAME_WON = 'game-won',
+}

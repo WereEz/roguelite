@@ -20,15 +20,17 @@ export class RoomRepository implements IRoomRepository {
         return this.repo.save(entities);
     }
 
-    findBySessionId(sessionId: number): Promise<RoomEntity[]> {
-        return this.repo.find({where: {sessionId}, order: {index: 'ASC'}});
+    findBySessionAndIndexWithRoomEnemy(
+        sessionId: number,
+        index: number,
+    ): Promise<RoomEntity | null> {
+        return this.repo.findOne({
+            where: {sessionId, index},
+            relations: {roomEnemy: {enemy: true}},
+        });
     }
 
-    findBySessionAndIndex(sessionId: number, index: number): Promise<RoomEntity | null> {
-        return this.repo.findOne({where: {sessionId, index}});
-    }
-
-    async completeRoom(roomId: number): Promise<void> {
-        await this.repo.update(roomId, {isComplete: true});
+    async completeRoom(sessionId: number, index: number): Promise<void> {
+        await this.repo.update({sessionId, index}, {isComplete: true});
     }
 }

@@ -18,8 +18,5 @@ export class EnemyEntity {
     agility: number;
 
     @Column()
-    hp: number;
-
-    @Column()
-    maxHp: number;
+    baseHp: number;
 }

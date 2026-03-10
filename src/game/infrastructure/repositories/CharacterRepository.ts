@@ -18,7 +18,7 @@ export class CharacterRepository implements ICharacterRepository {
         return this.repo.save(entity);
     }
 
-    findBySessionId(sessionId: number): Promise<CharacterEntity | null> {
-        return this.repo.findOne({where: {sessionId}});
+    async updateHp(characterId: number, hp: number): Promise<void> {
+        await this.repo.update(characterId, {hp});
     }
 }

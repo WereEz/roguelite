@@ -1,4 +1,4 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
 import {GameSessionEntity} from '../../domain/entities/GameSessionEntity';
@@ -12,32 +12,42 @@ export class GameSessionRepository implements IGameSessionRepository {
         private readonly repo: Repository<GameSessionEntity>,
     ) {}
 
-    createSession(userId: number): Promise<GameSessionEntity> {
+    createSession(userId: number, totalRooms: number): Promise<GameSessionEntity> {
         const entity = this.repo.create({
             userId,
             status: GameSessionStatus.ACTIVE,
             currentRoomIndex: 0,
+            totalRooms,
         });
 
         return this.repo.save(entity);
     }
 
-    findActiveSession(userId: number): Promise<GameSessionEntity | null> {
-        return this.repo.findOne({where: {userId, status: GameSessionStatus.ACTIVE}});
+    findActiveSessionWithCharacter(userId: number): Promise<GameSessionEntity | null> {
+        return this.repo.findOne({
+            where: {userId, status: GameSessionStatus.ACTIVE},
+            relations: {character: true},
+        });
+    }
+
+    findActiveSessionWithCharacterLocked(userId: number): Promise<GameSessionEntity | null> {
+        return this.repo
+            .createQueryBuilder('gs')
+            .leftJoinAndSelect('gs.character', 'character')
+            .where('gs.userId = :userId', {userId})
+            .andWhere('gs.status = :status', {status: GameSessionStatus.ACTIVE})
+            .setLock('pessimistic_write', undefined, ['gs'])
+            .getOne();
     }
 
     async finishSession(
         sessionId: number,
         status: GameSessionStatus.WON | GameSessionStatus.LOST,
-    ): Promise<GameSessionEntity> {
-        const entity = await this.repo.findOne({where: {id: sessionId}});
+    ): Promise<void> {
+        await this.repo.update(sessionId, {status});
+    }
 
-        if (!entity) {
-            throw new NotFoundException(`GameSession ${sessionId} not found.`);
-        }
-
-        entity.status = status;
-
-        return this.repo.save(entity);
+    async advanceRoom(sessionId: number): Promise<void> {
+        await this.repo.increment({id: sessionId}, 'currentRoomIndex', 1);
     }
 }

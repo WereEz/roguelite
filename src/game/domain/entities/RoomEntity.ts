@@ -1,9 +1,19 @@
-import {Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Relation} from 'typeorm';
+import {
+    Column,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    OneToOne,
+    PrimaryGeneratedColumn,
+    Relation,
+} from 'typeorm';
 import {GameSessionEntity} from './GameSessionEntity';
-import {EnemyEntity} from './EnemyEntity';
+import {RoomEnemyEntity} from './RoomEnemyEntity';
 import {RoomType} from '../enums/RoomType';
 
 @Entity('rooms')
+@Index('IDX_rooms_session_index', ['sessionId', 'index'])
 export class RoomEntity {
     @PrimaryGeneratedColumn()
     id: number;
@@ -21,12 +31,8 @@ export class RoomEntity {
     @Column({type: 'enum', enum: RoomType})
     type: RoomType;
 
-    @Column({nullable: true})
-    enemyId: number | null;
-
-    @ManyToOne(() => EnemyEntity, {nullable: true})
-    @JoinColumn({name: 'enemyId'})
-    enemy: Relation<EnemyEntity> | null;
+    @OneToOne(() => RoomEnemyEntity, (re) => re.room, {nullable: true})
+    roomEnemy: Relation<RoomEnemyEntity> | null;
 
     @Column({default: false})
     isComplete: boolean;

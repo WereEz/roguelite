@@ -5,7 +5,11 @@ export class UserEntity {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({unique: true})
+    @Column({
+        type: 'bigint',
+        unique: true,
+        transformer: {to: (v: number) => v, from: (v: string) => Number(v)},
+    })
     telegramId: number;
 
     @Column({nullable: true})

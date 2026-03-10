@@ -11,10 +11,6 @@ export class EnemyRepository implements IEnemyRepository {
         private readonly repo: Repository<EnemyEntity>,
     ) {}
 
-    findById(id: number): Promise<EnemyEntity | null> {
-        return this.repo.findOne({where: {id}});
-    }
-
     findAll(): Promise<EnemyEntity[]> {
         return this.repo.find();
     }

@@ -1,24 +1,106 @@
-import {Inject, Injectable, Logger, OnModuleInit} from '@nestjs/common';
-import {Telegraf} from 'telegraf';
+import {Injectable, Logger, OnModuleDestroy, OnModuleInit} from '@nestjs/common';
+import {Inject} from '@nestjs/common';
+import {Context, Telegraf} from 'telegraf';
 import {telegramConfiguration, TelegramConfigType} from '../../config/TelegramConfig';
+import {StartUseCase} from './use-cases/StartUseCase';
+import {NewGameUseCase} from './use-cases/NewGameUseCase';
+import {StatsUseCase} from './use-cases/StatsUseCase';
+import {AttackUseCase} from './use-cases/AttackUseCase';
+import {NextRoomUseCase} from './use-cases/NextRoomUseCase';
+import {BotCommand, botCommandDescription} from '../domain/constants/BotCommand';
+import {BotMessages} from '../domain/constants/BotMessages';
+import * as CallbackData from '../domain/constants/CallbackData';
+import {MenuButton} from '../domain/constants/MenuButton';
 
 @Injectable()
-export class TelegramService implements OnModuleInit {
+export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(TelegramService.name);
     private bot: Telegraf;
 
     constructor(
         @Inject(telegramConfiguration.KEY)
         private readonly config: TelegramConfigType,
+        private readonly startUseCase: StartUseCase,
+        private readonly newGameUseCase: NewGameUseCase,
+        private readonly statsUseCase: StatsUseCase,
+        private readonly attackUseCase: AttackUseCase,
+        private readonly nextRoomUseCase: NextRoomUseCase,
     ) {}
 
     onModuleInit(): void {
         this.bot = new Telegraf(this.config.token);
 
-        this.bot.start((ctx) => ctx.reply('Bot is working 🚀'));
+        this.bot.telegram
+            .setMyCommands([
+                {command: BotCommand.START, description: botCommandDescription(BotCommand.START)},
+                {
+                    command: BotCommand.NEW_GAME,
+                    description: botCommandDescription(BotCommand.NEW_GAME),
+                },
+                {command: BotCommand.STATS, description: botCommandDescription(BotCommand.STATS)},
+            ])
+            .catch((err) => this.logger.error('Failed to set bot commands', err));
 
-        this.bot.launch();
+        this.bot.start(this.wrap((ctx) => this.startUseCase.execute(ctx)));
+        this.bot.command(
+            BotCommand.NEW_GAME,
+            this.wrap((ctx) => this.newGameUseCase.execute(ctx)),
+        );
+        this.bot.command(
+            BotCommand.STATS,
+            this.wrap((ctx) => this.statsUseCase.execute(ctx)),
+        );
 
-        this.logger.log('Telegram bot started (polling)');
+        this.bot.hears(
+            MenuButton.NEW_GAME,
+            this.wrap((ctx) => this.newGameUseCase.execute(ctx)),
+        );
+        this.bot.hears(
+            MenuButton.STATS,
+            this.wrap((ctx) => this.statsUseCase.execute(ctx)),
+        );
+
+        this.bot.on('callback_query', async (ctx) => {
+            if (!('data' in ctx.callbackQuery)) return;
+
+            const data = ctx.callbackQuery.data;
+
+            try {
+                if (CallbackData.isAttack(data)) {
+                    await this.attackUseCase.execute(ctx, data);
+                } else if (data === CallbackData.NEXT_ROOM) {
+                    await this.nextRoomUseCase.execute(ctx);
+                } else if (data === CallbackData.NEW_GAME) {
+                    await ctx.answerCbQuery();
+                    await this.newGameUseCase.execute(ctx);
+                }
+            } catch (err) {
+                this.logger.error(`Callback error [${data}]`, err);
+                await ctx.answerCbQuery(BotMessages.INTERNAL_ERROR).catch(() => void 0);
+            }
+        });
+
+        this.bot.catch((err, ctx) => {
+            this.logger.error(`Unhandled bot error for update ${ctx.update.update_id}`, err);
+        });
+
+        this.bot.launch().catch((err) => this.logger.error('Bot launch failed', err));
+
+        this.logger.log('Telegram bot started');
+    }
+
+    private wrap<C extends Context>(handler: (ctx: C) => Promise<void>) {
+        return async (ctx: C) => {
+            try {
+                await handler(ctx);
+            } catch (err) {
+                this.logger.error('Handler error', err);
+                await ctx.reply(BotMessages.INTERNAL_ERROR).catch(() => void 0);
+            }
+        };
+    }
+
+    onModuleDestroy(): void {
+        this.bot.stop();
     }
 }

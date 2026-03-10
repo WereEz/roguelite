@@ -1,9 +1,12 @@
 import {Logger, ValidationPipe} from '@nestjs/common';
 import {NestFactory} from '@nestjs/core';
 import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
+import {initializeTransactionalContext} from 'typeorm-transactional';
 import {App} from './app';
 
 async function bootstrap() {
+    initializeTransactionalContext();
+
     const app = await NestFactory.create(App, {cors: true});
     const logger = new Logger('Bootstrap');
 
