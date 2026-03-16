@@ -14,7 +14,12 @@
         "typeorm": "typeorm-ts-node-commonjs -d src/config/DataSource.ts",
         "migration:generate": "yarn typeorm migration:generate",
         "migration:run": "yarn typeorm migration:run",
-        "migration:revert": "yarn typeorm migration:revert"
+        "migration:revert": "yarn typeorm migration:revert",
+        "migration:run:prod": "typeorm migration:run -d dist/config/DataSource.js",
+        "docker:up": "docker compose up",
+        "docker:up:build": "docker compose up --build",
+        "docker:down": "docker compose down",
+        "docker:logs": "docker compose logs -f app"
     },
     "dependencies": {
         "@nestjs/common": "^11.0.0",
