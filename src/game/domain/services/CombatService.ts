@@ -1,4 +1,5 @@
 import {Injectable} from '@nestjs/common';
+import {RandomService} from './RandomService';
 import {CombatantStateDto} from '../dtos/CombatantStateDto';
 import {CombatEventDto} from '../dtos/CombatEventDto';
 import {TurnResultDto} from '../dtos/TurnResultDto';
@@ -18,6 +19,10 @@ const ENDURANCE_REDUCTION_FACTOR = 0.5;
 
 @Injectable()
 export class CombatService {
+    constructor(
+        private readonly randomService: RandomService,
+    ) {}
+
     processTurn(
         character: CombatantStateDto,
         enemy: CombatantStateDto,
@@ -90,7 +95,7 @@ export class CombatService {
 
         const enemyDodge = this.calcDodgeChance(enemy, character);
 
-        if (this.roll(enemyDodge)) {
+        if (this.randomService.roll(enemyDodge)) {
             return {enemyDamage: 0, events: [{type: CombatEventType.PLAYER_MISS}]};
         }
 
@@ -108,7 +113,7 @@ export class CombatService {
             this.calcDodgeChance(character, enemy) +
             (action === PlayerAction.EVADE ? EVADE_DODGE_BONUS : 0);
 
-        if (this.roll(dodgeChance)) {
+        if (this.randomService.roll(dodgeChance)) {
             const events: CombatEventDto[] = [{type: CombatEventType.PLAYER_EVADED}];
 
             if (action === PlayerAction.EVADE) {
@@ -139,7 +144,7 @@ export class CombatService {
     }
 
     private rollDamage(attacker: CombatantStateDto): number {
-        const variance = Math.floor(Math.random() * (attacker.strength / 2 + 1));
+        const variance = this.randomService.intBetween(0, Math.floor(attacker.strength / 2));
 
         return attacker.strength + variance;
     }
@@ -158,9 +163,5 @@ export class CombatService {
         const reduction = Math.floor(defender.endurance * ENDURANCE_REDUCTION_FACTOR);
 
         return Math.max(1, damage - reduction);
-    }
-
-    private roll(chance: number): boolean {
-        return Math.random() < chance;
     }
 }
