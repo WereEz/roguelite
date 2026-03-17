@@ -1,6 +1,6 @@
 import tseslint from 'typescript-eslint';
 import prettierConfig from 'eslint-config-prettier';
-import prettierPlugin from 'eslint-plugin-prettier';
+
 export default tseslint.config(
     {
         ignores: ['dist/', 'node_modules/'],
@@ -10,9 +10,6 @@ export default tseslint.config(
 
     {
         files: ['**/*.ts'],
-        plugins: {
-            prettier: prettierPlugin,
-        },
         rules: {
             'no-useless-constructor': 'off',
             'class-methods-use-this': 'off',
@@ -35,7 +32,6 @@ export default tseslint.config(
             '@typescript-eslint/explicit-function-return-type': 'off',
             '@typescript-eslint/interface-name-prefix': 'off',
             'no-console': 'error',
-            'prettier/prettier': 'error',
             'padding-line-between-statements': [
                 'error',
                 {blankLine: 'always', prev: '*', next: '*'},

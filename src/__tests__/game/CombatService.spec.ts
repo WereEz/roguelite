@@ -83,6 +83,7 @@ describe('CombatService', () => {
             const playerTookDamage = result.events.some(
                 (e) => e.type === CombatEventType.PLAYER_TOOK_DAMAGE,
             );
+
             expect(playerTookDamage).toBe(false);
         });
     });
@@ -111,6 +112,7 @@ describe('CombatService', () => {
                 intBetween: jest.fn().mockReturnValue(0),
                 pick: jest.fn(),
             } as unknown as RandomService;
+
             const service = new CombatService(mockRandom);
 
             const result = service.processTurn(makeChar(), makeChar(), PlayerAction.PRECISE_STRIKE);
@@ -140,7 +142,9 @@ describe('CombatService', () => {
             const result = service.processTurn(makeChar(), makeChar(), PlayerAction.STRIKE);
 
             expect(result.events).toContainEqual({type: CombatEventType.PLAYER_EVADED});
+
             const counter = result.events.find((e) => e.type === CombatEventType.PLAYER_COUNTER);
+
             expect(counter).toBeUndefined();
         });
 
@@ -168,6 +172,7 @@ describe('CombatService', () => {
                     e.type === CombatEventType.PLAYER_HIT ||
                     e.type === CombatEventType.PLAYER_PRECISE_HIT,
             );
+
             expect(playerHit).toBeUndefined();
         });
     });
@@ -182,6 +187,7 @@ describe('CombatService', () => {
 
             const hitEvent = result.events.find(
                 (e) => e.type === CombatEventType.PLAYER_HIT);
+
             expect(hitEvent?.damage).toBe(1);
         });
 
@@ -191,6 +197,7 @@ describe('CombatService', () => {
                 intBetween: jest.fn().mockReturnValue(5),
                 pick: jest.fn(),
             } as unknown as RandomService;
+
             const service = new CombatService(mockRandom);
 
             const result = service.processTurn(makeChar(), makeChar(), PlayerAction.STRIKE);
