@@ -84,14 +84,14 @@ export class CombatService {
             return {enemyDamage: 0, events: []};
         }
 
-        if (action === PlayerAction.PRECISE_STRIKE) {
-            const damage = this.reduceByEndurance(this.calcPreciseDamage(character), enemy);
-
-            return {
-                enemyDamage: damage,
-                events: [{type: CombatEventType.PLAYER_PRECISE_HIT, damage}],
-            };
-        }
+        // if (action === PlayerAction.PRECISE_STRIKE) {
+        //     const damage = this.reduceByEndurance(this.calcPreciseDamage(character), enemy);
+        //
+        //     return {
+        //         enemyDamage: damage,
+        //         events: [{type: CombatEventType.PLAYER_PRECISE_HIT, damage}],
+        //     };
+        // }
 
         const enemyDodge = this.calcDodgeChance(enemy, character);
 
