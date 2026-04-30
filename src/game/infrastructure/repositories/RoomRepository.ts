@@ -22,7 +22,13 @@ export class RoomRepository implements IRoomRepository {
         connections: IRoomGraphConnection[],
     ): Promise<RoomEntity[]> {
         const entities = nodes.map((node) =>
-            this.repo.create({sessionId, type: node.type, layer: node.layer, direction: node.direction, isComplete: false}),
+            this.repo.create({
+                sessionId,
+                type: node.type,
+                layer: node.layer,
+                direction: node.direction,
+                isComplete: false,
+            }),
         );
 
         const saved = await this.repo.save(entities);

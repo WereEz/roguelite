@@ -63,7 +63,11 @@ export class ChoosePathUseCase {
             });
         } else {
             await ctx.reply(
-                this.replyService.renderEmptyRoom(result.layer, result.playerHp, result.playerMaxHp),
+                this.replyService.renderEmptyRoom(
+                    result.layer,
+                    result.playerHp,
+                    result.playerMaxHp,
+                ),
             );
 
             if (result.pathChoices.length > 0) {

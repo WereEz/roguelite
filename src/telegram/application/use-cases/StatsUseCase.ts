@@ -27,8 +27,6 @@ export class StatsUseCase {
             return;
         }
 
-        await ctx.reply(
-            this.replyService.renderStats(result.currentLayer, result.character),
-        );
+        await ctx.reply(this.replyService.renderStats(result.currentLayer, result.character));
     }
 }

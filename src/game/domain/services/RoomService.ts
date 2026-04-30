@@ -23,7 +23,11 @@ export class RoomService {
         sessionId: number,
         currentRoomId: number | null,
     ): Promise<RoomEntity | null> {
-        return this.roomRepository.findByIdWithRoomEnemyIfReachable(roomId, sessionId, currentRoomId);
+        return this.roomRepository.findByIdWithRoomEnemyIfReachable(
+            roomId,
+            sessionId,
+            currentRoomId,
+        );
     }
 
     findFirstLayerRooms(sessionId: number): Promise<RoomEntity[]> {

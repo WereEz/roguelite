@@ -19,9 +19,7 @@ const ENDURANCE_REDUCTION_FACTOR = 0.5;
 
 @Injectable()
 export class CombatService {
-    constructor(
-        private readonly randomService: RandomService,
-    ) {}
+    constructor(private readonly randomService: RandomService) {}
 
     processTurn(
         character: CombatantStateDto,

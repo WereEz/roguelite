@@ -25,9 +25,7 @@ export class DungeonGraphService {
         RoomType.EMPTY,
     ];
 
-    constructor(
-        private readonly randomService: RandomService,
-    ) {}
+    constructor(private readonly randomService: RandomService) {}
 
     public generate(): IDungeonGraph {
         const nodes: IRoomGraphNode[] = [];
@@ -36,7 +34,11 @@ export class DungeonGraphService {
         const layerIndices: number[][] = [];
 
         for (let layer = 1; layer <= DUNGEON_MIDDLE_LAYER_COUNT; layer++) {
-            const count = this.randomService.intBetween(DUNGEON_MIN_ROOMS_PER_LAYER, DUNGEON_MAX_ROOMS_PER_LAYER);
+            const count = this.randomService.intBetween(
+                DUNGEON_MIN_ROOMS_PER_LAYER,
+                DUNGEON_MAX_ROOMS_PER_LAYER,
+            );
+
             const layerStart = nodes.length;
             const indices: number[] = [];
             const directions = DIRECTIONS_BY_ROOM_COUNT[count];
@@ -55,7 +57,11 @@ export class DungeonGraphService {
 
         const bossIndex = nodes.length;
 
-        nodes.push({type: RoomType.BOSS, layer: DUNGEON_MIDDLE_LAYER_COUNT + 1, direction: RoomDirection.CENTER});
+        nodes.push({
+            type: RoomType.BOSS,
+            layer: DUNGEON_MIDDLE_LAYER_COUNT + 1,
+            direction: RoomDirection.CENTER,
+        });
         layerIndices.push([bossIndex]);
 
         for (let l = 0; l < layerIndices.length - 1; l++) {

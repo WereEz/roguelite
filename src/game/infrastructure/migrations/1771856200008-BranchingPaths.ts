@@ -3,7 +3,9 @@ import {MigrationInterface, QueryRunner} from 'typeorm';
 export class BranchingPaths1771856200008 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`DROP INDEX IF EXISTS "IDX_rooms_session_index"`);
-        await queryRunner.query(`ALTER TABLE "game_sessions" DROP COLUMN IF EXISTS "currentRoomIndex"`);
+        await queryRunner.query(
+            `ALTER TABLE "game_sessions" DROP COLUMN IF EXISTS "currentRoomIndex"`,
+        );
         await queryRunner.query(`ALTER TABLE "game_sessions" DROP COLUMN IF EXISTS "totalRooms"`);
         await queryRunner.query(
             `ALTER TABLE "game_sessions" ADD COLUMN "currentRoomId" INTEGER DEFAULT NULL`,

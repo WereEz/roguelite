@@ -70,16 +70,18 @@ export class GameFacade implements IGameFacade {
 
         if (!session) return null;
 
-        return {session, character: session.character, currentLayer: session.currentRoom?.layer ?? 0};
+        return {
+            session,
+            character: session.character,
+            currentLayer: session.currentRoom?.layer ?? 0,
+        };
     }
 
-    async getPathChoices(
-        sessionId: number,
-        currentRoomId: number | null,
-    ): Promise<IPathChoice[]> {
-        const rooms = currentRoomId === null
-            ? await this.roomService.findFirstLayerRooms(sessionId)
-            : await this.roomService.findNextRooms(currentRoomId);
+    async getPathChoices(sessionId: number, currentRoomId: number | null): Promise<IPathChoice[]> {
+        const rooms =
+            currentRoomId === null
+                ? await this.roomService.findFirstLayerRooms(sessionId)
+                : await this.roomService.findNextRooms(currentRoomId);
 
         return rooms.map((r) => ({roomId: r.id, type: r.type, direction: r.direction}));
     }
@@ -151,7 +153,14 @@ export class GameFacade implements IGameFacade {
                 playerMaxHp,
             };
 
-            return {roomType: room.type, layer: room.layer, playerHp, playerMaxHp, enemyInfo, pathChoices: []};
+            return {
+                roomType: room.type,
+                layer: room.layer,
+                playerHp,
+                playerMaxHp,
+                enemyInfo,
+                pathChoices: [],
+            };
         }
 
         await Promise.all([
@@ -160,7 +169,12 @@ export class GameFacade implements IGameFacade {
         ]);
 
         const nextRooms = await this.roomService.findNextRooms(roomId);
-        const pathChoices: IPathChoice[] = nextRooms.map((r) => ({roomId: r.id, type: r.type, direction: r.direction}));
+
+        const pathChoices: IPathChoice[] = nextRooms.map((r) => ({
+            roomId: r.id,
+            type: r.type,
+            direction: r.direction,
+        }));
 
         return {roomType: room.type, layer: room.layer, playerHp, playerMaxHp, pathChoices};
     }
@@ -221,7 +235,11 @@ export class GameFacade implements IGameFacade {
             } else {
                 const nextRooms = await this.roomService.findNextRooms(room.id);
 
-                pathChoices = nextRooms.map((r) => ({roomId: r.id, type: r.type, direction: r.direction}));
+                pathChoices = nextRooms.map((r) => ({
+                    roomId: r.id,
+                    type: r.type,
+                    direction: r.direction,
+                }));
             }
         } else if (turnResult.result === CombatResult.LOSE) {
             await Promise.all([
