@@ -42,7 +42,4 @@ lerna-debug.log*
 /files
 
 #spec files
-**/*/container-state.json
-
-#docker
-docker-compose.yml
+**/*/container-state.jsonтак у
