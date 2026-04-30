@@ -1,13 +1,22 @@
 import {RoomEntity} from '../entities/RoomEntity';
-import {RoomType} from '../enums/RoomType';
+import {IRoomGraphNode} from './IRoomGraphNode';
+import {IRoomGraphConnection} from './IRoomGraphConnection';
 
 export const ROOM_REPOSITORY = 'ROOM_REPOSITORY';
 
 export interface IRoomRepository {
-    createMany(sessionId: number, types: RoomType[]): Promise<RoomEntity[]>;
-    findBySessionAndIndexWithRoomEnemy(
+    createGraph(
         sessionId: number,
-        index: number,
+        nodes: IRoomGraphNode[],
+        connections: IRoomGraphConnection[],
+    ): Promise<RoomEntity[]>;
+    findByIdWithRoomEnemy(roomId: number): Promise<RoomEntity | null>;
+    findByIdWithRoomEnemyIfReachable(
+        roomId: number,
+        sessionId: number,
+        currentRoomId: number | null,
     ): Promise<RoomEntity | null>;
-    completeRoom(sessionId: number, index: number): Promise<void>;
+    findFirstLayerRooms(sessionId: number): Promise<RoomEntity[]>;
+    findNextRooms(roomId: number): Promise<RoomEntity[]>;
+    completeRoom(roomId: number): Promise<void>;
 }

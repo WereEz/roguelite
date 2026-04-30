@@ -4,4 +4,5 @@ import {CharacterEntity} from '../../../../game/domain/entities/CharacterEntity'
 export interface ISessionWithCharacter {
     session: GameSessionEntity;
     character: CharacterEntity;
+    currentLayer: number;
 }

@@ -28,7 +28,7 @@ export class StatsUseCase {
         }
 
         await ctx.reply(
-            this.replyService.renderStats(result.session.currentRoomIndex + 1, result.character),
+            this.replyService.renderStats(result.currentLayer, result.character),
         );
     }
 }

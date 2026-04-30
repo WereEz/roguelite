@@ -13,8 +13,8 @@ export class GameSessionService {
         private readonly gameSessionRepository: IGameSessionRepository,
     ) {}
 
-    createSession(userId: number, totalRooms: number): Promise<GameSessionEntity> {
-        return this.gameSessionRepository.createSession(userId, totalRooms);
+    createSession(userId: number): Promise<GameSessionEntity> {
+        return this.gameSessionRepository.createSession(userId);
     }
 
     findActiveSessionWithCharacter(userId: number): Promise<GameSessionEntity | null> {
@@ -32,7 +32,7 @@ export class GameSessionService {
         return this.gameSessionRepository.finishSession(sessionId, result);
     }
 
-    advanceRoom(sessionId: number): Promise<void> {
-        return this.gameSessionRepository.advanceRoom(sessionId);
+    setCurrentRoom(sessionId: number, roomId: number): Promise<void> {
+        return this.gameSessionRepository.setCurrentRoom(sessionId, roomId);
     }
 }

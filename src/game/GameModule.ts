@@ -4,6 +4,7 @@ import {CharacterEntity} from './domain/entities/CharacterEntity';
 import {GameSessionEntity} from './domain/entities/GameSessionEntity';
 import {EnemyEntity} from './domain/entities/EnemyEntity';
 import {RoomEntity} from './domain/entities/RoomEntity';
+import {RoomConnectionEntity} from './domain/entities/RoomConnectionEntity';
 import {RoomEnemyEntity} from './domain/entities/RoomEnemyEntity';
 import {CHARACTER_REPOSITORY} from './domain/interfaces/ICharacterRepository';
 import {ENEMY_REPOSITORY} from './domain/interfaces/IEnemyRepository';
@@ -17,6 +18,7 @@ import {CombatService} from './domain/services/CombatService';
 import {RoomService} from './domain/services/RoomService';
 import {RoomEnemyService} from './domain/services/RoomEnemyService';
 import {RandomService} from './domain/services/RandomService';
+import {DungeonGraphService} from './domain/services/DungeonGraphService';
 import {CharacterRepository} from './infrastructure/repositories/CharacterRepository';
 import {EnemyRepository} from './infrastructure/repositories/EnemyRepository';
 import {GameSessionRepository} from './infrastructure/repositories/GameSessionRepository';
@@ -31,6 +33,7 @@ import {GAME_FACADE} from '../base/domain/interfaces/game/IGameFacade';
             GameSessionEntity,
             CharacterEntity,
             RoomEntity,
+            RoomConnectionEntity,
             RoomEnemyEntity,
             EnemyEntity,
         ]),
@@ -43,6 +46,7 @@ import {GAME_FACADE} from '../base/domain/interfaces/game/IGameFacade';
         RoomService,
         RoomEnemyService,
         RandomService,
+        DungeonGraphService,
         {
             provide: GAME_FACADE,
             useClass: GameFacade,

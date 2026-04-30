@@ -129,4 +129,16 @@ export class ReplyService implements OnModuleInit {
             [TemplateVar.ENEMY_NAME]: result.enemyName,
         });
     }
+
+    renderPathChoices(): string {
+        return this.render(Template.PATH_CHOICES, {});
+    }
+
+    renderEmptyRoom(layer: number, playerHp: number, playerMaxHp: number): string {
+        return this.render(Template.EMPTY_ROOM, {
+            [TemplateVar.LAYER]: layer,
+            [TemplateVar.HP]: playerHp,
+            [TemplateVar.MAX_HP]: playerMaxHp,
+        });
+    }
 }

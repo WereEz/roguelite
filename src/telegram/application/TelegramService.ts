@@ -6,7 +6,7 @@ import {StartUseCase} from './use-cases/StartUseCase';
 import {NewGameUseCase} from './use-cases/NewGameUseCase';
 import {StatsUseCase} from './use-cases/StatsUseCase';
 import {AttackUseCase} from './use-cases/AttackUseCase';
-import {NextRoomUseCase} from './use-cases/NextRoomUseCase';
+import {ChoosePathUseCase} from './use-cases/ChoosePathUseCase';
 import {BotCommand, botCommandDescription} from '../domain/constants/BotCommand';
 import {BotMessages} from '../domain/constants/BotMessages';
 import * as CallbackData from '../domain/constants/CallbackData';
@@ -24,7 +24,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         private readonly newGameUseCase: NewGameUseCase,
         private readonly statsUseCase: StatsUseCase,
         private readonly attackUseCase: AttackUseCase,
-        private readonly nextRoomUseCase: NextRoomUseCase,
+        private readonly choosePathUseCase: ChoosePathUseCase,
     ) {}
 
     onModuleInit(): void {
@@ -68,8 +68,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             try {
                 if (CallbackData.isAttack(data)) {
                     await this.attackUseCase.execute(ctx, data);
-                } else if (data === CallbackData.NEXT_ROOM) {
-                    await this.nextRoomUseCase.execute(ctx);
+                } else if (CallbackData.isChoosePath(data)) {
+                    await this.choosePathUseCase.execute(ctx, data);
                 } else if (data === CallbackData.NEW_GAME) {
                     await ctx.answerCbQuery();
                     await this.newGameUseCase.execute(ctx);

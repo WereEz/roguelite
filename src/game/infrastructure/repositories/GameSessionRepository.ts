@@ -12,12 +12,10 @@ export class GameSessionRepository implements IGameSessionRepository {
         private readonly repo: Repository<GameSessionEntity>,
     ) {}
 
-    createSession(userId: number, totalRooms: number): Promise<GameSessionEntity> {
+    createSession(userId: number): Promise<GameSessionEntity> {
         const entity = this.repo.create({
             userId,
             status: GameSessionStatus.ACTIVE,
-            currentRoomIndex: 0,
-            totalRooms,
         });
 
         return this.repo.save(entity);
@@ -26,7 +24,7 @@ export class GameSessionRepository implements IGameSessionRepository {
     findActiveSessionWithCharacter(userId: number): Promise<GameSessionEntity | null> {
         return this.repo.findOne({
             where: {userId, status: GameSessionStatus.ACTIVE},
-            relations: {character: true},
+            relations: {character: true, currentRoom: true},
         });
     }
 
@@ -34,6 +32,7 @@ export class GameSessionRepository implements IGameSessionRepository {
         return this.repo
             .createQueryBuilder('gs')
             .leftJoinAndSelect('gs.character', 'character')
+            .leftJoinAndSelect('gs.currentRoom', 'currentRoom')
             .where('gs.userId = :userId', {userId})
             .andWhere('gs.status = :status', {status: GameSessionStatus.ACTIVE})
             .setLock('pessimistic_write', undefined, ['gs'])
@@ -47,7 +46,7 @@ export class GameSessionRepository implements IGameSessionRepository {
         await this.repo.update(sessionId, {status});
     }
 
-    async advanceRoom(sessionId: number): Promise<void> {
-        await this.repo.increment({id: sessionId}, 'currentRoomIndex', 1);
+    async setCurrentRoom(sessionId: number, roomId: number): Promise<void> {
+        await this.repo.update(sessionId, {currentRoomId: roomId});
     }
 }
