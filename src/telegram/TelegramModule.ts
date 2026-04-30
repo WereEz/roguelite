@@ -5,7 +5,7 @@ import {StartUseCase} from './application/use-cases/StartUseCase';
 import {NewGameUseCase} from './application/use-cases/NewGameUseCase';
 import {StatsUseCase} from './application/use-cases/StatsUseCase';
 import {AttackUseCase} from './application/use-cases/AttackUseCase';
-import {NextRoomUseCase} from './application/use-cases/NextRoomUseCase';
+import {ChoosePathUseCase} from './application/use-cases/ChoosePathUseCase';
 import {UserModule} from '../user/UserModule';
 import {GameModule} from '../game/GameModule';
 
@@ -18,7 +18,7 @@ import {GameModule} from '../game/GameModule';
         NewGameUseCase,
         StatsUseCase,
         AttackUseCase,
-        NextRoomUseCase,
+        ChoosePathUseCase,
     ],
 })
 export class TelegramModule {}

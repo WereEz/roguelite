@@ -1,7 +1,7 @@
 import {Inject, Injectable} from '@nestjs/common';
 import {RoomEntity} from '../entities/RoomEntity';
-import {RoomType} from '../enums/RoomType';
 import {ROOM_REPOSITORY, IRoomRepository} from '../interfaces/IRoomRepository';
+import {IDungeonGraph} from '../interfaces/IDungeonGraph';
 
 @Injectable()
 export class RoomService {
@@ -10,15 +10,35 @@ export class RoomService {
         private readonly roomRepository: IRoomRepository,
     ) {}
 
-    generateForSession(sessionId: number, types: RoomType[]): Promise<RoomEntity[]> {
-        return this.roomRepository.createMany(sessionId, types);
+    generateGraph(sessionId: number, graph: IDungeonGraph): Promise<RoomEntity[]> {
+        return this.roomRepository.createGraph(sessionId, graph.nodes, graph.connections);
     }
 
-    getRoomByIndexWithRoomEnemy(sessionId: number, index: number): Promise<RoomEntity | null> {
-        return this.roomRepository.findBySessionAndIndexWithRoomEnemy(sessionId, index);
+    findByIdWithRoomEnemy(roomId: number): Promise<RoomEntity | null> {
+        return this.roomRepository.findByIdWithRoomEnemy(roomId);
     }
 
-    async completeRoom(sessionId: number, index: number): Promise<void> {
-        await this.roomRepository.completeRoom(sessionId, index);
+    findByIdWithRoomEnemyIfReachable(
+        roomId: number,
+        sessionId: number,
+        currentRoomId: number | null,
+    ): Promise<RoomEntity | null> {
+        return this.roomRepository.findByIdWithRoomEnemyIfReachable(
+            roomId,
+            sessionId,
+            currentRoomId,
+        );
+    }
+
+    findFirstLayerRooms(sessionId: number): Promise<RoomEntity[]> {
+        return this.roomRepository.findFirstLayerRooms(sessionId);
+    }
+
+    findNextRooms(roomId: number): Promise<RoomEntity[]> {
+        return this.roomRepository.findNextRooms(roomId);
+    }
+
+    async completeRoom(roomId: number): Promise<void> {
+        await this.roomRepository.completeRoom(roomId);
     }
 }

@@ -10,4 +10,6 @@ export enum Template {
     COMBAT_LOSE = 'combat-lose',
     ENTER_ROOM = 'enter-room',
     GAME_WON = 'game-won',
+    EMPTY_ROOM = 'empty-room',
+    PATH_CHOICES = 'path-choices',
 }

@@ -185,8 +185,7 @@ describe('CombatService', () => {
 
             const result = service.processTurn(weakPlayer, tankEnemy, PlayerAction.STRIKE);
 
-            const hitEvent = result.events.find(
-                (e) => e.type === CombatEventType.PLAYER_HIT);
+            const hitEvent = result.events.find((e) => e.type === CombatEventType.PLAYER_HIT);
 
             expect(hitEvent?.damage).toBe(1);
         });

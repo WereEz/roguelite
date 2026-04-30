@@ -11,9 +11,10 @@ import {
 import {GameSessionEntity} from './GameSessionEntity';
 import {RoomEnemyEntity} from './RoomEnemyEntity';
 import {RoomType} from '../enums/RoomType';
+import {RoomDirection} from '../enums/RoomDirection';
 
 @Entity('rooms')
-@Index('IDX_rooms_session_index', ['sessionId', 'index'])
+@Index('IDX_rooms_session_layer', ['sessionId', 'layer'])
 export class RoomEntity {
     @PrimaryGeneratedColumn()
     id: number;
@@ -26,10 +27,13 @@ export class RoomEntity {
     session: Relation<GameSessionEntity>;
 
     @Column()
-    index: number;
+    layer: number;
 
     @Column({type: 'enum', enum: RoomType})
     type: RoomType;
+
+    @Column({type: 'enum', enum: RoomDirection})
+    direction: RoomDirection;
 
     @OneToOne(() => RoomEnemyEntity, (re) => re.room, {nullable: true})
     roomEnemy: Relation<RoomEnemyEntity> | null;

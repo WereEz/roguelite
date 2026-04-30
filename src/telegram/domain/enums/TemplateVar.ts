@@ -6,6 +6,7 @@ export enum TemplateVar {
     ENDURANCE = 'endurance',
     AGILITY = 'agility',
     ROOM_NUMBER = 'roomNumber',
+    LAYER = 'layer',
     CHARACTER = 'character',
     EVENTS = 'events',
     ENEMY_NAME = 'enemyName',

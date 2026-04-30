@@ -4,7 +4,7 @@ import {IUserFacade, USER_FACADE} from '../../../base/domain/interfaces/user/IUs
 import {IGameFacade, GAME_FACADE} from '../../../base/domain/interfaces/game/IGameFacade';
 import {ReplyService} from '../ReplyService';
 import {assertFrom} from '../guards/assertFrom';
-import {Keyboards} from '../../domain/constants/Keyboards';
+import {Keyboards, MenuKeyboards, buildPathChoicesKeyboard} from '../../domain/constants/Keyboards';
 
 @Injectable()
 export class NewGameUseCase {
@@ -21,31 +21,42 @@ export class NewGameUseCase {
         const user = await this.userFacade.findOrCreate(from.id, from.username);
 
         const existing = await this.gameFacade.getActiveSessionWithCharacter(user.id);
+        const isNew = existing === null;
 
-        let session, character, isNew: boolean;
+        const {session, character, currentLayer} =
+            existing ?? (await this.gameFacade.initSession(user.id));
 
-        if (existing) {
-            ({session, character} = existing);
-            isNew = false;
-        } else {
-            ({session, character} = await this.gameFacade.initSession(user.id));
-            isNew = true;
+        await ctx.reply(this.replyService.renderNewGame(isNew, currentLayer, character), {
+            reply_markup: MenuKeyboards.IN_GAME,
+        });
+
+        const inActiveCombat =
+            session.currentRoomId !== null &&
+            session.currentRoom !== null &&
+            !session.currentRoom.isComplete;
+
+        if (inActiveCombat) {
+            const room = await this.gameFacade.getEnterRoomInfo(
+                session.id,
+                session.currentRoomId!,
+                character.hp,
+                character.maxHp,
+            );
+
+            if (room) {
+                await ctx.reply(this.replyService.renderEnterRoom(room), {
+                    reply_markup: Keyboards.ATTACK,
+                });
+
+                return;
+            }
         }
 
-        await ctx.reply(
-            this.replyService.renderNewGame(isNew, session.currentRoomIndex + 1, character),
-        );
+        const choices = await this.gameFacade.getPathChoices(session.id, session.currentRoomId);
 
-        const roomInfo = await this.gameFacade.getEnterRoomInfo(
-            session.id,
-            session.currentRoomIndex + 1,
-            character.hp,
-            character.maxHp,
-        );
-
-        if (roomInfo) {
-            await ctx.reply(this.replyService.renderEnterRoom(roomInfo), {
-                reply_markup: Keyboards.ATTACK,
+        if (choices.length > 0) {
+            await ctx.reply(this.replyService.renderPathChoices(), {
+                reply_markup: buildPathChoicesKeyboard(choices),
             });
         }
     }

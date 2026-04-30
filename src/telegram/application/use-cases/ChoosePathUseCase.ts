@@ -1,17 +1,16 @@
-import {Injectable, Inject, NotFoundException} from '@nestjs/common';
+import {Injectable, Inject, BadRequestException, NotFoundException} from '@nestjs/common';
 import {Context} from 'telegraf';
 import {IUserFacade, USER_FACADE} from '../../../base/domain/interfaces/user/IUserFacade';
 import {IGameFacade, GAME_FACADE} from '../../../base/domain/interfaces/game/IGameFacade';
-import {PlayerAction, isValidPlayerAction} from '../../../game/domain/enums/PlayerAction';
-import {CombatResult} from '../../../game/domain/enums/CombatResult';
+import {RoomType} from '../../../game/domain/enums/RoomType';
 import {ReplyService} from '../ReplyService';
 import {assertFrom} from '../guards/assertFrom';
 import {BotMessages} from '../../domain/constants/BotMessages';
-import {Keyboards, MenuKeyboards, buildPathChoicesKeyboard} from '../../domain/constants/Keyboards';
+import {Keyboards, buildPathChoicesKeyboard} from '../../domain/constants/Keyboards';
 import * as CallbackData from '../../domain/constants/CallbackData';
 
 @Injectable()
-export class AttackUseCase {
+export class ChoosePathUseCase {
     constructor(
         @Inject(USER_FACADE)
         private readonly userFacade: IUserFacade,
@@ -21,23 +20,21 @@ export class AttackUseCase {
     ) {}
 
     async execute(ctx: Context, data: string): Promise<void> {
-        const action = CallbackData.parseAction(data);
+        await ctx.answerCbQuery();
 
-        if (!isValidPlayerAction(action)) {
-            await ctx.answerCbQuery(BotMessages.UNKNOWN_ACTION);
+        const roomId = CallbackData.parseRoomId(data);
 
-            return;
+        if (isNaN(roomId)) {
+            throw new BadRequestException('Invalid room id');
         }
 
         const from = assertFrom(ctx);
         const user = await this.userFacade.findOrCreate(from.id, from.username);
 
-        await ctx.answerCbQuery();
-
         let result;
 
         try {
-            result = await this.gameFacade.processCombatTurn(user.id, action as PlayerAction);
+            result = await this.gameFacade.chooseRoom(user.id, roomId);
         } catch (err) {
             if (err instanceof NotFoundException) {
                 await ctx.reply(BotMessages.NO_ACTIVE_GAME_REPLY);
@@ -45,29 +42,39 @@ export class AttackUseCase {
                 return;
             }
 
+            if (err instanceof BadRequestException) {
+                await ctx.reply(BotMessages.INVALID_ROOM_CHOICE);
+
+                return;
+            }
+
             throw err;
         }
 
-        if (result.result === CombatResult.ONGOING) {
-            await ctx.reply(this.replyService.renderCombatTurn(result), {
+        if (result.roomType === RoomType.ENEMY || result.roomType === RoomType.BOSS) {
+            if (!result.enemyInfo) {
+                await ctx.reply(BotMessages.NO_ENEMY_IN_ROOM);
+
+                return;
+            }
+
+            await ctx.reply(this.replyService.renderEnterRoom(result.enemyInfo), {
                 reply_markup: Keyboards.ATTACK,
             });
-        } else if (result.result === CombatResult.WIN && !result.gameOver) {
-            await ctx.reply(this.replyService.renderCombatWin(result));
+        } else {
+            await ctx.reply(
+                this.replyService.renderEmptyRoom(
+                    result.layer,
+                    result.playerHp,
+                    result.playerMaxHp,
+                ),
+            );
 
             if (result.pathChoices.length > 0) {
                 await ctx.reply(this.replyService.renderPathChoices(), {
                     reply_markup: buildPathChoicesKeyboard(result.pathChoices),
                 });
             }
-        } else if (result.result === CombatResult.WIN && result.gameOver) {
-            await ctx.reply(this.replyService.renderGameWon(result), {
-                reply_markup: MenuKeyboards.DEFAULT,
-            });
-        } else {
-            await ctx.reply(this.replyService.renderCombatLose(result), {
-                reply_markup: MenuKeyboards.DEFAULT,
-            });
         }
     }
 }
