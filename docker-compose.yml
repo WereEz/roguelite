@@ -16,7 +16,6 @@ services:
       retries: 10
 
   app:
-    build: .
     image: ${DOCKER_IMAGE:-roguelite-app}
     ports:
       - "${APP_PORT:-3000}:3000"
