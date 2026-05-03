@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {RandomService} from './RandomService';
-import {CombatantStateDto} from '../dtos/CombatantStateDto';
+import {ICombatantStats} from '../interfaces/ICombatantStats';
 import {CombatEventDto} from '../dtos/CombatEventDto';
 import {TurnResultDto} from '../dtos/TurnResultDto';
 import {CombatEventType} from '../enums/CombatEventType';
@@ -22,8 +22,8 @@ export class CombatService {
     constructor(private readonly randomService: RandomService) {}
 
     processTurn(
-        character: CombatantStateDto,
-        enemy: CombatantStateDto,
+        character: ICombatantStats,
+        enemy: ICombatantStats,
         action: PlayerAction,
     ): TurnResultDto {
         const player = {...character};
@@ -74,8 +74,8 @@ export class CombatService {
     }
 
     private applyPlayerAttack(
-        character: CombatantStateDto,
-        enemy: CombatantStateDto,
+        character: ICombatantStats,
+        enemy: ICombatantStats,
         action: PlayerAction,
     ): PlayerAttackResultDto {
         if (action === PlayerAction.EVADE) {
@@ -103,8 +103,8 @@ export class CombatService {
     }
 
     private applyEnemyAttack(
-        character: CombatantStateDto,
-        enemy: CombatantStateDto,
+        character: ICombatantStats,
+        enemy: ICombatantStats,
         action: PlayerAction,
     ): EnemyAttackResultDto {
         const dodgeChance =
@@ -141,23 +141,23 @@ export class CombatService {
         return {playerDamage, enemyCounterDamage: 0, events};
     }
 
-    private rollDamage(attacker: CombatantStateDto): number {
+    private rollDamage(attacker: ICombatantStats): number {
         const variance = this.randomService.intBetween(0, Math.floor(attacker.strength / 2));
 
         return attacker.strength + variance;
     }
 
-    private calcDodgeChance(defender: CombatantStateDto, attacker: CombatantStateDto): number {
+    private calcDodgeChance(defender: ICombatantStats, attacker: ICombatantStats): number {
         const diff = (defender.agility - attacker.agility) * AGILITY_DODGE_FACTOR;
 
         return Math.max(MIN_DODGE_CHANCE, Math.min(MAX_DODGE_CHANCE, BASE_DODGE_CHANCE + diff));
     }
 
-    private calcPreciseDamage(attacker: CombatantStateDto): number {
+    private calcPreciseDamage(attacker: ICombatantStats): number {
         return Math.max(1, Math.floor(this.rollDamage(attacker) * PRECISE_DAMAGE_MULTIPLIER));
     }
 
-    private reduceByEndurance(damage: number, defender: CombatantStateDto): number {
+    private reduceByEndurance(damage: number, defender: ICombatantStats): number {
         const reduction = Math.floor(defender.endurance * ENDURANCE_REDUCTION_FACTOR);
 
         return Math.max(1, damage - reduction);

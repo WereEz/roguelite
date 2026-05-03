@@ -6,6 +6,8 @@ export const BotMessages = {
     ACTION_IN_PROGRESS: 'Действие уже выполняется.',
     INVALID_ROOM_CHOICE:
         'Нельзя выбрать эту комнату. Сначала завершите текущую или выберите доступный путь.',
+    ENEMY_ALREADY_DEFEATED: 'Этот враг уже побеждён.',
+    ALTAR_NO_LONGER_AVAILABLE: 'Этот алтарь больше недоступен.',
     INTERNAL_ERROR: 'Произошла ошибка. Попробуйте ещё раз.',
     DEFAULT_USERNAME: 'Герой',
 } as const;

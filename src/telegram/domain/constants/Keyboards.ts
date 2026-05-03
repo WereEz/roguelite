@@ -3,6 +3,8 @@ import {IPathChoice} from '../../../base/domain/interfaces/game/IPathChoice';
 import {RoomType} from '../../../game/domain/enums/RoomType';
 import {RoomDirection} from '../../../game/domain/enums/RoomDirection';
 import {PlayerAction, playerActionLabel} from '../../../game/domain/enums/PlayerAction';
+import {STATS, statLabel} from '../../../game/domain/enums/Stat';
+import {ALTAR_STAT_BOOST} from '../../../game/domain/services/AltarService';
 import * as CallbackData from './CallbackData';
 import {MenuButton} from './MenuButton';
 
@@ -14,9 +16,10 @@ const DIRECTION_ICONS: Record<RoomDirection, string> = {
 
 const ROOM_TYPE_LABEL: Record<RoomType, string> = {
     [RoomType.ENEMY]: 'Враг',
-    [RoomType.TREASURE]: 'Клад',
-    [RoomType.EMPTY]: 'Пустая',
     [RoomType.BOSS]: 'Босс',
+    [RoomType.CAMPFIRE]: 'Костёр',
+    [RoomType.BLOOD_ALTAR]: 'Кровавый алтарь',
+    [RoomType.ALTAR]: 'Алтарь',
 };
 
 export const MenuKeyboards = {
@@ -65,4 +68,27 @@ export function buildPathChoicesKeyboard(choices: IPathChoice[]): InlineKeyboard
     }));
 
     return {inline_keyboard: [buttons]};
+}
+
+export function buildAltarKeyboard(): InlineKeyboardMarkup {
+    return {
+        inline_keyboard: [
+            STATS.map((stat) => ({
+                text: `+${ALTAR_STAT_BOOST} ${statLabel(stat)}`,
+                callback_data: CallbackData.altar(stat),
+            })),
+        ],
+    };
+}
+
+export function buildBloodAltarKeyboard(): InlineKeyboardMarkup {
+    return {
+        inline_keyboard: [
+            STATS.map((stat) => ({
+                text: `+${ALTAR_STAT_BOOST} ${statLabel(stat)}`,
+                callback_data: CallbackData.bloodAltar(stat),
+            })),
+            [{text: 'Покинуть алтарь', callback_data: CallbackData.LEAVE_BLOOD_ALTAR}],
+        ],
+    };
 }

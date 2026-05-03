@@ -98,4 +98,8 @@ export class RoomRepository implements IRoomRepository {
     async completeRoom(roomId: number): Promise<void> {
         await this.repo.update({id: roomId, isComplete: false}, {isComplete: true});
     }
+
+    async incrementInteractionCount(roomId: number): Promise<void> {
+        await this.repo.increment({id: roomId}, 'interactionCount', 1);
+    }
 }

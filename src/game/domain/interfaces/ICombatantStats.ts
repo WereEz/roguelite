@@ -1,4 +1,4 @@
-export class CombatantStateDto {
+export interface ICombatantStats {
     hp: number;
     strength: number;
     endurance: number;
