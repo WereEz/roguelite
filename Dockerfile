@@ -29,6 +29,6 @@ ENV APP_PORT=${APP_PORT}
 EXPOSE ${APP_PORT}
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget -qO- http://localhost:${APP_PORT}/health || exit 1
+  CMD wget -qO- http://localhost:${APP_PORT}/api/health || exit 1
 
 CMD ["sh", "-c", "yarn migration:run:prod && node dist/main.js"]
