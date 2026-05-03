@@ -19,6 +19,7 @@ import {RoomService} from './domain/services/RoomService';
 import {RoomEnemyService} from './domain/services/RoomEnemyService';
 import {RandomService} from './domain/services/RandomService';
 import {DungeonGraphService} from './domain/services/DungeonGraphService';
+import {AltarService} from './domain/services/AltarService';
 import {CharacterRepository} from './infrastructure/repositories/CharacterRepository';
 import {EnemyRepository} from './infrastructure/repositories/EnemyRepository';
 import {GameSessionRepository} from './infrastructure/repositories/GameSessionRepository';
@@ -47,6 +48,7 @@ import {GAME_FACADE} from '../base/domain/interfaces/game/IGameFacade';
         RoomEnemyService,
         RandomService,
         DungeonGraphService,
+        AltarService,
         {
             provide: GAME_FACADE,
             useClass: GameFacade,

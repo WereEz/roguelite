@@ -40,4 +40,7 @@ export class RoomEntity {
 
     @Column({default: false})
     isComplete: boolean;
+
+    @Column({default: 0})
+    interactionCount: number;
 }

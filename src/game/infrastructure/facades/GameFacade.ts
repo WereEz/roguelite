@@ -13,20 +13,28 @@ import {CombatService} from '../../domain/services/CombatService';
 import {RoomEnemyService} from '../../domain/services/RoomEnemyService';
 import {RandomService} from '../../domain/services/RandomService';
 import {DungeonGraphService} from '../../domain/services/DungeonGraphService';
+import {AltarService} from '../../domain/services/AltarService';
 import {IGameFacade} from '../../../base/domain/interfaces/game/IGameFacade';
 import {IChooseRoomResult} from '../../../base/domain/interfaces/game/IChooseRoomResult';
+import {IInteractionResult} from '../../../base/domain/interfaces/game/IInteractionResult';
 import {IPathChoice} from '../../../base/domain/interfaces/game/IPathChoice';
 import {IRoomInfoResult} from '../../../base/domain/interfaces/game/IRoomInfoResult';
 import {ISessionWithCharacter} from '../../../base/domain/interfaces/game/ISessionWithCharacter';
 import {ICombatTurnResult} from '../../../base/domain/interfaces/game/ICombatTurnResult';
-import {CombatantStateDto} from '../../domain/dtos/CombatantStateDto';
+import {RoomEntity} from '../../domain/entities/RoomEntity';
+import {GameSessionEntity} from '../../domain/entities/GameSessionEntity';
+import {CharacterEntity} from '../../domain/entities/CharacterEntity';
+import {IEnterRoomHandler} from '../../domain/interfaces/IEnterRoomHandler';
 import {CombatResult} from '../../domain/enums/CombatResult';
 import {GameSessionStatus} from '../../domain/enums/GameSessionStatus';
 import {RoomType} from '../../domain/enums/RoomType';
 import {PlayerAction} from '../../domain/enums/PlayerAction';
+import {Stat} from '../../domain/enums/Stat';
 
 @Injectable()
 export class GameFacade implements IGameFacade {
+    private readonly enterRoomHandlers: ReadonlyMap<RoomType, IEnterRoomHandler>;
+
     constructor(
         private readonly gameSessionService: GameSessionService,
         private readonly characterService: CharacterService,
@@ -36,7 +44,25 @@ export class GameFacade implements IGameFacade {
         private readonly roomEnemyService: RoomEnemyService,
         private readonly randomService: RandomService,
         private readonly dungeonGraphService: DungeonGraphService,
-    ) {}
+        private readonly altarService: AltarService,
+    ) {
+        const enterCombat: IEnterRoomHandler = (session, room, character) =>
+            this.enterCombatRoom(session, room, character);
+
+        const enterAltar: IEnterRoomHandler = (session, room, character) =>
+            this.altarService.enterAltar(session, room, character);
+
+        const enterCampfire: IEnterRoomHandler = (session, room, character) =>
+            this.altarService.enterCampfire(session, room, character);
+
+        this.enterRoomHandlers = new Map<RoomType, IEnterRoomHandler>([
+            [RoomType.ENEMY, enterCombat],
+            [RoomType.BOSS, enterCombat],
+            [RoomType.CAMPFIRE, enterCampfire],
+            [RoomType.ALTAR, enterAltar],
+            [RoomType.BLOOD_ALTAR, enterAltar],
+        ]);
+    }
 
     @Transactional()
     async initSession(userId: number): Promise<ISessionWithCharacter> {
@@ -83,7 +109,7 @@ export class GameFacade implements IGameFacade {
                 ? await this.roomService.findFirstLayerRooms(sessionId)
                 : await this.roomService.findNextRooms(currentRoomId);
 
-        return rooms.map((r) => ({roomId: r.id, type: r.type, direction: r.direction}));
+        return this.roomService.toPathChoices(rooms);
     }
 
     async getEnterRoomInfo(
@@ -96,23 +122,12 @@ export class GameFacade implements IGameFacade {
 
         if (!room?.roomEnemy || room.isComplete) return null;
 
-        return {
-            roomNumber: room.layer,
-            enemyName: room.roomEnemy.enemy.name,
-            enemyHp: room.roomEnemy.currentHp,
-            enemyMaxHp: room.roomEnemy.maxHp,
-            playerHp,
-            playerMaxHp,
-        };
+        return this.roomEnemyService.buildRoomInfo(room, playerHp, playerMaxHp);
     }
 
     @Transactional()
     async chooseRoom(userId: number, roomId: number): Promise<IChooseRoomResult> {
-        const session = await this.gameSessionService.findActiveSessionWithCharacterLocked(userId);
-
-        if (!session) {
-            throw new NotFoundException('No active game session');
-        }
+        const session = await this.loadActiveSession(userId);
 
         if (session.currentRoom && !session.currentRoom.isComplete) {
             throw new BadRequestException('Finish the current room first');
@@ -132,60 +147,18 @@ export class GameFacade implements IGameFacade {
             throw new BadRequestException('Room already completed');
         }
 
-        const playerHp = session.character.hp;
-        const playerMaxHp = session.character.maxHp;
+        const handler = this.enterRoomHandlers.get(room.type);
 
-        if (room.type === RoomType.ENEMY || room.type === RoomType.BOSS) {
-            if (!room.roomEnemy) {
-                throw new InternalServerErrorException(
-                    `Room ${roomId} (type ${room.type}) has no enemy`,
-                );
-            }
-
-            await this.gameSessionService.setCurrentRoom(session.id, roomId);
-
-            const enemyInfo: IRoomInfoResult = {
-                roomNumber: room.layer,
-                enemyName: room.roomEnemy.enemy.name,
-                enemyHp: room.roomEnemy.currentHp,
-                enemyMaxHp: room.roomEnemy.maxHp,
-                playerHp,
-                playerMaxHp,
-            };
-
-            return {
-                roomType: room.type,
-                layer: room.layer,
-                playerHp,
-                playerMaxHp,
-                enemyInfo,
-                pathChoices: [],
-            };
+        if (!handler) {
+            throw new InternalServerErrorException(`Unhandled room type ${room.type}`);
         }
 
-        await Promise.all([
-            this.gameSessionService.setCurrentRoom(session.id, roomId),
-            this.roomService.completeRoom(roomId),
-        ]);
-
-        const nextRooms = await this.roomService.findNextRooms(roomId);
-
-        const pathChoices: IPathChoice[] = nextRooms.map((r) => ({
-            roomId: r.id,
-            type: r.type,
-            direction: r.direction,
-        }));
-
-        return {roomType: room.type, layer: room.layer, playerHp, playerMaxHp, pathChoices};
+        return handler(session, room, session.character);
     }
 
     @Transactional()
     async processCombatTurn(userId: number, action: PlayerAction): Promise<ICombatTurnResult> {
-        const session = await this.gameSessionService.findActiveSessionWithCharacterLocked(userId);
-
-        if (!session) {
-            throw new NotFoundException('No active game session');
-        }
+        const session = await this.loadActiveSession(userId);
 
         if (!session.currentRoomId) {
             throw new BadRequestException('Not in a room');
@@ -202,69 +175,138 @@ export class GameFacade implements IGameFacade {
         }
 
         const character = session.character;
+        const roomEnemy = room.roomEnemy;
 
-        const playerState: CombatantStateDto = {
-            hp: character.hp,
-            strength: character.strength,
-            endurance: character.endurance,
-            agility: character.agility,
-        };
+        const turnResult = this.combatService.processTurn(
+            this.characterService.toCombatantStats(character),
+            this.roomEnemyService.toCombatantStats(roomEnemy),
+            action,
+        );
 
-        const enemyState: CombatantStateDto = {
-            hp: room.roomEnemy.currentHp,
-            strength: room.roomEnemy.enemy.strength,
-            endurance: room.roomEnemy.enemy.endurance,
-            agility: room.roomEnemy.enemy.agility,
-        };
+        const isWin = turnResult.result === CombatResult.WIN;
+        const isLose = turnResult.result === CombatResult.LOSE;
+        const isBossWin = isWin && room.type === RoomType.BOSS;
 
-        const turnResult = this.combatService.processTurn(playerState, enemyState, action);
+        const persistOps: Promise<unknown>[] = [
+            this.characterService.updateHp(character.id, turnResult.playerHp),
+            this.roomEnemyService.updateCurrentHp(roomEnemy.id, isWin ? 0 : turnResult.enemyHp),
+        ];
 
-        let gameOver = false;
-        let pathChoices: IPathChoice[] = [];
-
-        if (turnResult.result === CombatResult.WIN) {
-            await Promise.all([
-                this.characterService.updateHp(character.id, turnResult.playerHp),
-                this.roomEnemyService.updateCurrentHp(room.roomEnemy.id, 0),
-                this.roomService.completeRoom(room.id),
-            ]);
-
-            if (room.type === RoomType.BOSS) {
-                await this.gameSessionService.finishSession(session.id, GameSessionStatus.WON);
-                gameOver = true;
-            } else {
-                const nextRooms = await this.roomService.findNextRooms(room.id);
-
-                pathChoices = nextRooms.map((r) => ({
-                    roomId: r.id,
-                    type: r.type,
-                    direction: r.direction,
-                }));
-            }
-        } else if (turnResult.result === CombatResult.LOSE) {
-            await Promise.all([
-                this.characterService.updateHp(character.id, turnResult.playerHp),
-                this.roomEnemyService.updateCurrentHp(room.roomEnemy.id, turnResult.enemyHp),
-                this.gameSessionService.finishSession(session.id, GameSessionStatus.LOST),
-            ]);
-            gameOver = true;
-        } else {
-            await Promise.all([
-                this.characterService.updateHp(character.id, turnResult.playerHp),
-                this.roomEnemyService.updateCurrentHp(room.roomEnemy.id, turnResult.enemyHp),
-            ]);
+        if (isWin) {
+            persistOps.push(this.roomService.completeRoom(room.id));
         }
+
+        if (isBossWin) {
+            persistOps.push(
+                this.gameSessionService.finishSession(session.id, GameSessionStatus.WON),
+            );
+        } else if (isLose) {
+            persistOps.push(
+                this.gameSessionService.finishSession(session.id, GameSessionStatus.LOST),
+            );
+        }
+
+        await Promise.all(persistOps);
+
+        const pathChoices =
+            isWin && !isBossWin
+                ? this.roomService.toPathChoices(await this.roomService.findNextRooms(room.id))
+                : [];
 
         return {
             events: turnResult.events,
             playerHp: turnResult.playerHp,
             playerMaxHp: character.maxHp,
-            enemyName: room.roomEnemy.enemy.name,
+            enemyName: roomEnemy.enemy.name,
             enemyHp: turnResult.enemyHp,
-            enemyMaxHp: room.roomEnemy.maxHp,
+            enemyMaxHp: roomEnemy.maxHp,
             result: turnResult.result,
-            gameOver,
+            gameOver: isBossWin || isLose,
             pathChoices,
         };
+    }
+
+    @Transactional()
+    async useAltar(userId: number, stat: Stat): Promise<IInteractionResult> {
+        const {room, character} = await this.loadInteractionRoom(userId, RoomType.ALTAR);
+
+        return this.altarService.useAltar(room, character, stat);
+    }
+
+    @Transactional()
+    async useBloodAltar(userId: number, stat: Stat): Promise<IInteractionResult> {
+        const {session, room, character} = await this.loadInteractionRoom(
+            userId,
+            RoomType.BLOOD_ALTAR,
+        );
+
+        return this.altarService.useBloodAltar(session, room, character, stat);
+    }
+
+    @Transactional()
+    async leaveBloodAltar(userId: number): Promise<IInteractionResult> {
+        const {room, character} = await this.loadInteractionRoom(userId, RoomType.BLOOD_ALTAR);
+
+        return this.altarService.leaveBloodAltar(room, character);
+    }
+
+    private async enterCombatRoom(
+        session: GameSessionEntity,
+        room: RoomEntity,
+        character: CharacterEntity,
+    ): Promise<IChooseRoomResult> {
+        const enemyInfo = this.roomEnemyService.buildRoomInfo(room, character.hp, character.maxHp);
+
+        await this.gameSessionService.setCurrentRoom(session.id, room.id);
+
+        return {
+            roomType: room.type,
+            roomId: room.id,
+            hp: character.hp,
+            maxHp: character.maxHp,
+            enemyInfo,
+            pathChoices: [],
+        };
+    }
+
+    private async loadActiveSession(userId: number): Promise<GameSessionEntity> {
+        const session = await this.gameSessionService.findActiveSessionWithCharacterLocked(userId);
+
+        if (!session) {
+            throw new NotFoundException('No active game session');
+        }
+
+        return session;
+    }
+
+    private async loadInteractionRoom(
+        userId: number,
+        expectedType: RoomType,
+    ): Promise<{
+        session: GameSessionEntity;
+        room: RoomEntity;
+        character: CharacterEntity;
+    }> {
+        const session = await this.loadActiveSession(userId);
+
+        if (!session.currentRoomId) {
+            throw new BadRequestException('Not in a room');
+        }
+
+        const room = await this.roomService.findByIdWithRoomEnemy(session.currentRoomId);
+
+        if (!room) {
+            throw new BadRequestException('Room not found');
+        }
+
+        if (room.type !== expectedType) {
+            throw new BadRequestException(`Room is not ${expectedType}`);
+        }
+
+        if (room.isComplete) {
+            throw new BadRequestException('Room already completed');
+        }
+
+        return {session, room, character: session.character};
     }
 }

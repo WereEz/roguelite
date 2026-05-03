@@ -2,15 +2,20 @@ import {Injectable, OnModuleInit} from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import {CharacterEntity} from '../../game/domain/entities/CharacterEntity';
-import {CombatEventDto} from '../../game/domain/dtos/CombatEventDto';
 import {Template} from '../domain/enums/Template';
 import {TemplateVar} from '../domain/enums/TemplateVar';
 import {BotMessages} from '../domain/constants/BotMessages';
-import {CombatEventLabels} from '../domain/constants/CombatEventLabels';
 import {IRoomInfoResult} from '../../base/domain/interfaces/game/IRoomInfoResult';
 import {ICombatTurnResult} from '../../base/domain/interfaces/game/ICombatTurnResult';
-
-type TemplateContext = Partial<Record<TemplateVar, string | number>>;
+import {IInteractionResult} from '../../base/domain/interfaces/game/IInteractionResult';
+import {formatCombatEvents} from './formatters/combatEvents';
+import {
+    TemplateContext,
+    boostVars,
+    characterStats,
+    enemyState,
+    playerVitals,
+} from './templateContexts';
 
 @Injectable()
 export class ReplyService implements OnModuleInit {
@@ -47,20 +52,9 @@ export class ReplyService implements OnModuleInit {
 
     private renderCharacter(character: CharacterEntity): string {
         return this.render(Template.CHARACTER, {
-            [TemplateVar.HP]: character.hp,
-            [TemplateVar.MAX_HP]: character.maxHp,
-            [TemplateVar.STRENGTH]: character.strength,
-            [TemplateVar.ENDURANCE]: character.endurance,
-            [TemplateVar.AGILITY]: character.agility,
+            ...playerVitals(character),
+            ...characterStats(character),
         });
-    }
-
-    private formatEvent(event: CombatEventDto): string {
-        return CombatEventLabels[event.type](event);
-    }
-
-    private formatEvents(events: CombatEventDto[]): string {
-        return events.map((e) => this.formatEvent(e)).join('\n');
     }
 
     renderStart(username?: string): string {
@@ -86,46 +80,38 @@ export class ReplyService implements OnModuleInit {
     renderEnterRoom(room: IRoomInfoResult): string {
         return this.render(Template.ENTER_ROOM, {
             [TemplateVar.ROOM_NUMBER]: room.roomNumber,
-            [TemplateVar.ENEMY_NAME]: room.enemyName,
-            [TemplateVar.ENEMY_HP]: room.enemyHp,
-            [TemplateVar.ENEMY_MAX_HP]: room.enemyMaxHp,
-            [TemplateVar.HP]: room.playerHp,
-            [TemplateVar.MAX_HP]: room.playerMaxHp,
+            ...enemyState(room),
+            ...playerVitals({hp: room.playerHp, maxHp: room.playerMaxHp}),
         });
     }
 
     renderCombatTurn(result: ICombatTurnResult): string {
         return this.render(Template.COMBAT_TURN, {
-            [TemplateVar.EVENTS]: this.formatEvents(result.events),
-            [TemplateVar.HP]: result.playerHp,
-            [TemplateVar.MAX_HP]: result.playerMaxHp,
-            [TemplateVar.ENEMY_NAME]: result.enemyName,
-            [TemplateVar.ENEMY_HP]: result.enemyHp,
-            [TemplateVar.ENEMY_MAX_HP]: result.enemyMaxHp,
+            [TemplateVar.EVENTS]: formatCombatEvents(result.events),
+            ...playerVitals({hp: result.playerHp, maxHp: result.playerMaxHp}),
+            ...enemyState(result),
         });
     }
 
     renderCombatWin(result: ICombatTurnResult): string {
         return this.render(Template.COMBAT_WIN, {
-            [TemplateVar.EVENTS]: this.formatEvents(result.events),
-            [TemplateVar.HP]: result.playerHp,
-            [TemplateVar.MAX_HP]: result.playerMaxHp,
+            [TemplateVar.EVENTS]: formatCombatEvents(result.events),
+            ...playerVitals({hp: result.playerHp, maxHp: result.playerMaxHp}),
             [TemplateVar.ENEMY_NAME]: result.enemyName,
         });
     }
 
     renderCombatLose(result: ICombatTurnResult): string {
         return this.render(Template.COMBAT_LOSE, {
-            [TemplateVar.EVENTS]: this.formatEvents(result.events),
+            [TemplateVar.EVENTS]: formatCombatEvents(result.events),
             [TemplateVar.ENEMY_NAME]: result.enemyName,
         });
     }
 
     renderGameWon(result: ICombatTurnResult): string {
         return this.render(Template.GAME_WON, {
-            [TemplateVar.EVENTS]: this.formatEvents(result.events),
-            [TemplateVar.HP]: result.playerHp,
-            [TemplateVar.MAX_HP]: result.playerMaxHp,
+            [TemplateVar.EVENTS]: formatCombatEvents(result.events),
+            ...playerVitals({hp: result.playerHp, maxHp: result.playerMaxHp}),
             [TemplateVar.ENEMY_NAME]: result.enemyName,
         });
     }
@@ -134,11 +120,47 @@ export class ReplyService implements OnModuleInit {
         return this.render(Template.PATH_CHOICES, {});
     }
 
-    renderEmptyRoom(layer: number, playerHp: number, playerMaxHp: number): string {
-        return this.render(Template.EMPTY_ROOM, {
-            [TemplateVar.LAYER]: layer,
-            [TemplateVar.HP]: playerHp,
-            [TemplateVar.MAX_HP]: playerMaxHp,
+    renderCampfire(healed: number, hp: number, maxHp: number): string {
+        return this.render(Template.CAMPFIRE, {
+            [TemplateVar.HEALED]: healed,
+            ...playerVitals({hp, maxHp}),
         });
+    }
+
+    renderAltarPrompt(hp: number, maxHp: number): string {
+        return this.render(Template.ALTAR, playerVitals({hp, maxHp}));
+    }
+
+    renderAltarDone(result: IInteractionResult): string {
+        return this.render(Template.ALTAR_DONE, {
+            ...characterStats(result.character),
+            ...playerVitals(result.character),
+            ...boostVars(result.boost),
+        });
+    }
+
+    renderBloodAltarPrompt(prompt: {
+        hp: number;
+        maxHp: number;
+        usesRemaining: number;
+        nextCost: number;
+    }): string {
+        return this.render(Template.BLOOD_ALTAR, {
+            ...playerVitals(prompt),
+            [TemplateVar.USES_REMAINING]: prompt.usesRemaining,
+            [TemplateVar.NEXT_COST]: prompt.nextCost,
+        });
+    }
+
+    renderBloodAltarDone(result: IInteractionResult): string {
+        return this.render(Template.BLOOD_ALTAR_DONE, {
+            ...characterStats(result.character),
+            ...playerVitals(result.character),
+            ...boostVars(result.boost),
+        });
+    }
+
+    renderBloodAltarDeath(result: IInteractionResult): string {
+        return this.render(Template.BLOOD_ALTAR_DEATH, characterStats(result.character));
     }
 }

@@ -1,4 +1,4 @@
-import {Injectable, Inject, NotFoundException} from '@nestjs/common';
+import {Injectable, Inject, BadRequestException, NotFoundException} from '@nestjs/common';
 import {Context} from 'telegraf';
 import {IUserFacade, USER_FACADE} from '../../../base/domain/interfaces/user/IUserFacade';
 import {IGameFacade, GAME_FACADE} from '../../../base/domain/interfaces/game/IGameFacade';
@@ -24,15 +24,13 @@ export class AttackUseCase {
         const action = CallbackData.parseAction(data);
 
         if (!isValidPlayerAction(action)) {
-            await ctx.answerCbQuery(BotMessages.UNKNOWN_ACTION);
+            await ctx.reply(BotMessages.UNKNOWN_ACTION);
 
             return;
         }
 
         const from = assertFrom(ctx);
         const user = await this.userFacade.findOrCreate(from.id, from.username);
-
-        await ctx.answerCbQuery();
 
         let result;
 
@@ -41,6 +39,12 @@ export class AttackUseCase {
         } catch (err) {
             if (err instanceof NotFoundException) {
                 await ctx.reply(BotMessages.NO_ACTIVE_GAME_REPLY);
+
+                return;
+            }
+
+            if (err instanceof BadRequestException) {
+                await ctx.reply(BotMessages.ENEMY_ALREADY_DEFEATED);
 
                 return;
             }

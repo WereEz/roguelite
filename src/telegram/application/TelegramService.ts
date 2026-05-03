@@ -7,15 +7,23 @@ import {NewGameUseCase} from './use-cases/NewGameUseCase';
 import {StatsUseCase} from './use-cases/StatsUseCase';
 import {AttackUseCase} from './use-cases/AttackUseCase';
 import {ChoosePathUseCase} from './use-cases/ChoosePathUseCase';
+import {AltarUseCase} from './use-cases/AltarUseCase';
 import {BotCommand, botCommandDescription} from '../domain/constants/BotCommand';
 import {BotMessages} from '../domain/constants/BotMessages';
 import * as CallbackData from '../domain/constants/CallbackData';
 import {MenuButton} from '../domain/constants/MenuButton';
+import {ICallbackRoute} from '../domain/interfaces/ICallbackRoute';
+
+const exactMatch =
+    (value: string) =>
+    (data: string): boolean =>
+        data === value;
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(TelegramService.name);
     private bot: Telegraf;
+    private callbackRoutes: ICallbackRoute[] = [];
 
     constructor(
         @Inject(telegramConfiguration.KEY)
@@ -25,10 +33,41 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         private readonly statsUseCase: StatsUseCase,
         private readonly attackUseCase: AttackUseCase,
         private readonly choosePathUseCase: ChoosePathUseCase,
+        private readonly altarUseCase: AltarUseCase,
     ) {}
+
+    private buildICallbackRoutes(): ICallbackRoute[] {
+        return [
+            {
+                match: CallbackData.isAttack,
+                handle: (ctx, data) => this.attackUseCase.execute(ctx, data),
+            },
+            {
+                match: CallbackData.isChoosePath,
+                handle: (ctx, data) => this.choosePathUseCase.execute(ctx, data),
+            },
+            {
+                match: CallbackData.isAltar,
+                handle: (ctx, data) => this.altarUseCase.executeAltar(ctx, data),
+            },
+            {
+                match: CallbackData.isBloodAltar,
+                handle: (ctx, data) => this.altarUseCase.executeBloodAltar(ctx, data),
+            },
+            {
+                match: exactMatch(CallbackData.LEAVE_BLOOD_ALTAR),
+                handle: (ctx) => this.altarUseCase.executeLeaveBloodAltar(ctx),
+            },
+            {
+                match: exactMatch(CallbackData.NEW_GAME),
+                handle: (ctx) => this.newGameUseCase.execute(ctx),
+            },
+        ];
+    }
 
     onModuleInit(): void {
         this.bot = new Telegraf(this.config.token);
+        this.callbackRoutes = this.buildICallbackRoutes();
 
         this.bot.telegram
             .setMyCommands([
@@ -65,18 +104,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
             const data = ctx.callbackQuery.data;
 
+            await ctx.answerCbQuery().catch(() => void 0);
+
+            const route = this.callbackRoutes.find((r) => r.match(data));
+
+            if (!route) return;
+
             try {
-                if (CallbackData.isAttack(data)) {
-                    await this.attackUseCase.execute(ctx, data);
-                } else if (CallbackData.isChoosePath(data)) {
-                    await this.choosePathUseCase.execute(ctx, data);
-                } else if (data === CallbackData.NEW_GAME) {
-                    await ctx.answerCbQuery();
-                    await this.newGameUseCase.execute(ctx);
-                }
+                await route.handle(ctx, data);
             } catch (err) {
                 this.logger.error(`Callback error [${data}]`, err);
-                await ctx.answerCbQuery(BotMessages.INTERNAL_ERROR).catch(() => void 0);
+                await ctx.reply(BotMessages.INTERNAL_ERROR).catch(() => void 0);
             }
         });
 

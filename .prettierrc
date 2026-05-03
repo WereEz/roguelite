@@ -4,5 +4,6 @@
   "tabWidth": 4,
   "useTabs": false,
   "printWidth": 100,
-  "bracketSpacing": false
+  "bracketSpacing": false,
+  "endOfLine": "auto"
 }
