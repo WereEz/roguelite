@@ -13,6 +13,7 @@ import {UserModule} from './user/UserModule';
 import {TelegramModule} from './telegram/TelegramModule';
 import {GameModule} from './game/GameModule';
 import {HealthModule} from './health/HealthModule';
+import {AdminModule} from './admin/AdminModule';
 
 @Module({
     imports: [
@@ -35,6 +36,7 @@ import {HealthModule} from './health/HealthModule';
         TelegramModule,
         GameModule,
         HealthModule,
+        AdminModule,
     ],
 })
 export class App {}
