@@ -2,6 +2,7 @@ import {Inject, Injectable} from '@nestjs/common';
 import {RoomEntity} from '../entities/RoomEntity';
 import {ROOM_REPOSITORY, IRoomRepository} from '../interfaces/IRoomRepository';
 import {IDungeonGraph} from '../interfaces/IDungeonGraph';
+import {IPathChoice} from '../../../base/domain/interfaces/game/IPathChoice';
 
 @Injectable()
 export class RoomService {
@@ -9,6 +10,14 @@ export class RoomService {
         @Inject(ROOM_REPOSITORY)
         private readonly roomRepository: IRoomRepository,
     ) {}
+
+    toPathChoices(rooms: RoomEntity[]): IPathChoice[] {
+        return rooms.map((room) => ({
+            roomId: room.id,
+            type: room.type,
+            direction: room.direction,
+        }));
+    }
 
     generateGraph(sessionId: number, graph: IDungeonGraph): Promise<RoomEntity[]> {
         return this.roomRepository.createGraph(sessionId, graph.nodes, graph.connections);
@@ -40,5 +49,9 @@ export class RoomService {
 
     async completeRoom(roomId: number): Promise<void> {
         await this.roomRepository.completeRoom(roomId);
+    }
+
+    async incrementInteractionCount(roomId: number): Promise<void> {
+        await this.roomRepository.incrementInteractionCount(roomId);
     }
 }

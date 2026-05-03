@@ -1,6 +1,7 @@
 export enum RoomType {
     ENEMY = 'ENEMY',
-    TREASURE = 'TREASURE',
     BOSS = 'BOSS',
-    EMPTY = 'EMPTY',
+    CAMPFIRE = 'CAMPFIRE',
+    BLOOD_ALTAR = 'BLOOD_ALTAR',
+    ALTAR = 'ALTAR',
 }

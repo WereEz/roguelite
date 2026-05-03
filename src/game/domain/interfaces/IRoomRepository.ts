@@ -19,4 +19,5 @@ export interface IRoomRepository {
     findFirstLayerRooms(sessionId: number): Promise<RoomEntity[]>;
     findNextRooms(roomId: number): Promise<RoomEntity[]>;
     completeRoom(roomId: number): Promise<void>;
+    incrementInteractionCount(roomId: number): Promise<void>;
 }

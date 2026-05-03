@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import {
     DungeonGraphService,
     DUNGEON_MIDDLE_LAYER_COUNT,
@@ -13,6 +12,7 @@ interface RandomOverrides {
     intBetween?: (min: number, max: number) => number;
     pick?: <T>(arr: T[]) => T;
     roll?: (chance: number) => boolean;
+    weighted?: <K extends string>(weights: Partial<Record<K, number>>) => K;
 }
 
 function makeService(overrides: RandomOverrides = {}): DungeonGraphService {
@@ -20,6 +20,11 @@ function makeService(overrides: RandomOverrides = {}): DungeonGraphService {
         intBetween: jest.fn(overrides.intBetween ?? ((_min: number, max: number) => max)),
         pick: jest.fn(overrides.pick ?? (<T>(arr: T[]) => arr[0])),
         roll: jest.fn(overrides.roll ?? (() => false)),
+        weighted: jest.fn(
+            overrides.weighted ??
+                (<K extends string>(weights: Partial<Record<K, number>>) =>
+                    Object.keys(weights)[0] as K),
+        ),
     } as unknown as RandomService;
 
     return new DungeonGraphService(random);
@@ -52,7 +57,7 @@ describe('DungeonGraphService', () => {
             expect(bosses[0].direction).toBe(RoomDirection.CENTER);
         });
 
-        it('emits only ENEMY or EMPTY rooms in middle layers', () => {
+        it('does not place BOSS rooms in middle layers', () => {
             const service = makeService();
             const graph = service.generate();
 
@@ -61,7 +66,7 @@ describe('DungeonGraphService', () => {
             );
 
             for (const node of middleNodes) {
-                expect([RoomType.ENEMY, RoomType.EMPTY]).toContain(node.type);
+                expect(node.type).not.toBe(RoomType.BOSS);
             }
         });
 

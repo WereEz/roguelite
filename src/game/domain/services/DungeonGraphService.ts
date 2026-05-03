@@ -18,12 +18,12 @@ const DIRECTIONS_BY_ROOM_COUNT: Record<number, RoomDirection[]> = {
 
 @Injectable()
 export class DungeonGraphService {
-    private static readonly ROOM_TYPES: RoomType[] = [
-        RoomType.ENEMY,
-        RoomType.ENEMY,
-        RoomType.ENEMY,
-        RoomType.EMPTY,
-    ];
+    private static readonly ROOM_WEIGHTS: Partial<Record<RoomType, number>> = {
+        [RoomType.ENEMY]: 50,
+        [RoomType.CAMPFIRE]: 25,
+        [RoomType.BLOOD_ALTAR]: 12.5,
+        [RoomType.ALTAR]: 12.5,
+    };
 
     constructor(private readonly randomService: RandomService) {}
 
@@ -45,7 +45,7 @@ export class DungeonGraphService {
 
             for (let i = 0; i < count; i++) {
                 nodes.push({
-                    type: this.randomService.pick(DungeonGraphService.ROOM_TYPES),
+                    type: this.randomService.weighted(DungeonGraphService.ROOM_WEIGHTS),
                     layer,
                     direction: directions[i],
                 });

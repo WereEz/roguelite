@@ -1,14 +1,13 @@
-import 'reflect-metadata';
 import {CombatService} from '../../game/domain/services/CombatService';
 import {RandomService} from '../../game/domain/services/RandomService';
-import {CombatantStateDto} from '../../game/domain/dtos/CombatantStateDto';
+import {ICombatantStats} from '../../game/domain/interfaces/ICombatantStats';
 import {CombatEventType} from '../../game/domain/enums/CombatEventType';
 import {CombatResult} from '../../game/domain/enums/CombatResult';
 import {PlayerAction} from '../../game/domain/enums/PlayerAction';
 
-const DEFAULT_STATS: CombatantStateDto = {hp: 100, strength: 10, endurance: 5, agility: 5};
+const DEFAULT_STATS: ICombatantStats = {hp: 100, strength: 10, endurance: 5, agility: 5};
 
-function makeChar(overrides: Partial<CombatantStateDto> = {}): CombatantStateDto {
+function makeChar(overrides: Partial<ICombatantStats> = {}): ICombatantStats {
     return {...DEFAULT_STATS, ...overrides};
 }
 
